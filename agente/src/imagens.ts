@@ -9,6 +9,7 @@ export type ImagemEscolhida = {
   licenca: string;
   fonte: string; // página de origem (para o crédito)
   acervo: "Wikimedia Commons" | "Openverse" | "Pixabay" | "Pexels";
+  descricao?: string; // título, descrição e etiquetas do acervo, para conferir se a foto combina com a matéria
 };
 
 // Licenças aceitas no Wikimedia Commons. "NC" (não comercial) e "ND" ficam de fora: o site tem anúncios.
@@ -27,6 +28,7 @@ async function wikimedia(busca: string): Promise<ImagemEscolhida[]> {
     gsrlimit: "12",
     prop: "imageinfo",
     iiprop: "url|extmetadata|size",
+    iiextmetadatalanguage: "pt",
     iiurlwidth: "1600",
   });
   const r = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
@@ -47,20 +49,26 @@ async function wikimedia(busca: string): Promise<ImagemEscolhida[]> {
         licenca: semHtml(meta.LicenseShortName?.value),
         fonte: i.descriptionurl,
         acervo: "Wikimedia Commons" as const,
+        descricao: [
+          decodeURIComponent(i.descriptionurl.split("File:")[1] ?? "").replace(/_/g, " "),
+          semHtml(meta.ObjectName?.value),
+          semHtml(meta.ImageDescription?.value),
+          semHtml(meta.Categories?.value).replace(/\|/g, ", "),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+          .slice(0, 600),
       };
     })
     .filter((i) => LICENCA_OK.test(i.licenca) && !LICENCA_PROIBIDA.test(i.licenca))
-    .filter((i) => combinaComBusca(i.fonte, busca));
+    .filter((i) => textoCombina(i.descricao, busca));
 }
 
-// A busca do Commons é ampla ("Rio Grande do Sul" traz o estado inteiro). Exige que o nome
-// do arquivo contenha a maioria das palavras específicas da busca.
+// A busca do Commons é ampla ("Rio Grande do Sul" traz o estado inteiro). Exige que o nome do arquivo,
+// a descrição ou as categorias (ex.: "Universidade Federal de Santa Maria") contenham a maioria das
+// palavras específicas da busca.
 const GENERICAS = new Set(["rio", "grande", "sul", "brasil", "brazil", "rs", "do", "da", "de", "dos", "das"]);
 const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-
-function combinaComBusca(urlArquivo: string, busca: string): boolean {
-  return textoCombina(decodeURIComponent(urlArquivo.split("File:")[1] ?? "").replace(/_/g, " "), busca);
-}
 
 function textoCombina(texto: string, busca: string): boolean {
   const alvo = normalizar(texto);
@@ -87,7 +95,7 @@ async function openverse(busca: string): Promise<ImagemEscolhida[]> {
   });
   if (!r.ok) return [];
   const dados = (await r.json()) as {
-    results: Array<{ url: string; creator: string | null; license: string; license_version: string | null; foreign_landing_url: string; width: number | null; mature: boolean }>;
+    results: Array<{ url: string; title: string | null; tags?: Array<{ name: string }>; creator: string | null; license: string; license_version: string | null; foreign_landing_url: string; width: number | null; mature: boolean }>;
   };
   return dados.results
     .filter((i) => !i.mature && (i.width ?? 0) >= 900 && NOMES_LICENCA[i.license])
@@ -97,6 +105,7 @@ async function openverse(busca: string): Promise<ImagemEscolhida[]> {
       licenca: [NOMES_LICENCA[i.license], i.license.startsWith("by") ? i.license_version : ""].filter(Boolean).join(" "),
       fonte: i.foreign_landing_url,
       acervo: "Openverse" as const,
+      descricao: [i.title, (i.tags ?? []).map((t) => t.name).join(", ")].filter(Boolean).join(" · ").slice(0, 400),
     }));
 }
 
@@ -123,6 +132,7 @@ async function pixabay(busca: string): Promise<ImagemEscolhida[]> {
     licenca: "Licença Pixabay",
     fonte: p.pageURL,
     acervo: "Pixabay" as const,
+    descricao: p.tags,
   }));
 }
 
@@ -133,20 +143,21 @@ async function pexels(busca: string): Promise<ImagemEscolhida[]> {
     { headers: { Authorization: config.pexelsKey } },
   );
   if (!r.ok) return [];
-  const dados = (await r.json()) as { photos: Array<{ url: string; photographer: string; src: { large2x: string } }> };
+  const dados = (await r.json()) as { photos: Array<{ url: string; alt?: string; photographer: string; src: { large2x: string } }> };
   return dados.photos.map((p) => ({
     url: p.src.large2x,
     autor: p.photographer,
     licenca: "Licença Pexels",
     fonte: p.url,
     acervo: "Pexels" as const,
+    descricao: p.alt,
   }));
 }
 
 // Devolve candidatas na ordem de preferência: Commons (mais específico, ex.: lugares de Santa Maria),
 // depois Pixabay, Pexels e Openverse. Busca de lugar da cidade ("Santa Maria ... catedral") vai só ao
 // Commons: nos bancos genéricos ela traz Santa Maria del Fiore, em Florença.
-const LUGAR_LOCAL = /santa maria/i;
+const LUGAR_LOCAL = /santa maria|ufsm/i;
 const nenhuma = async (): Promise<ImagemEscolhida[]> => [];
 
 export async function buscarCandidatas(buscas: string[]): Promise<ImagemEscolhida[]> {

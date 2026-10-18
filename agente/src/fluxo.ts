@@ -5,7 +5,7 @@ import { config, nomesCategorias } from "./config.js";
 import { coletarTudo, type ItemColetado } from "./coletor.js";
 import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
-import { ajustar, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
+import { ajustar, escolherImagens, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
 import { baixarImagem, buscarCandidatas } from "./imagens.js";
 import { arteInstagram, camadasReelsMateria, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
 import { publicar } from "./publicar.js";
@@ -104,7 +104,7 @@ export async function aprovar(bot: Bot, id: string, orientacao?: string): Promis
       material = `${r.resumo}\n\n${material}\n\n${pesquisa}`.trim();
     }
     const rascunho = await redigir(r, material, orientacao);
-    db.atualizar(id, { rascunho, tentativaImagem: 0 });
+    db.atualizar(id, { rascunho, tentativaImagem: 0, imagensAprovadas: undefined });
     await montarPrevia(bot, id);
   } catch (e) {
     db.atualizar(id, { status: "erro", erro: (e as Error).message });
@@ -117,8 +117,15 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   const rascunho = r.rascunho!;
   const tentativa = r.tentativaImagem ?? 0;
 
-  const candidatas = await buscarCandidatas(rascunho.buscaImagem);
-  const imagem = candidatas[tentativa];
+  // A IA confere título, descrição e etiquetas de cada foto e só aprova as que combinam com a matéria
+  // (ex.: prédio de outra universidade numa notícia da UFSM é reprovado). Sem aprovadas, entra o fundo da editoria.
+  let aprovadas = r.imagensAprovadas;
+  if (!aprovadas) {
+    const candidatas = await buscarCandidatas(rascunho.buscaImagem);
+    aprovadas = await escolherImagens(rascunho, candidatas).catch(() => []);
+    db.atualizar(id, { imagensAprovadas: aprovadas });
+  }
+  const imagem = aprovadas[tentativa];
   let fotoReal: Buffer | null = null;
   if (imagem) {
     try {
@@ -173,7 +180,8 @@ export async function ajustarTexto(bot: Bot, id: string, pedido: string): Promis
   const r = db.obter(id);
   await bot.api.sendMessage(config.telegramChatId, "✏️ Ajustando a matéria…");
   const rascunho = await ajustar(r.rascunho!, pedido);
-  db.atualizar(id, { rascunho });
+  // O texto pode ter mudado o assunto da foto: confere as imagens de novo.
+  db.atualizar(id, { rascunho, tentativaImagem: 0, imagensAprovadas: undefined });
   await montarPrevia(bot, id);
 }
 

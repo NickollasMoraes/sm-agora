@@ -3,6 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { categorias, config } from "./config.js";
 import type { ItemColetado } from "./coletor.js";
+import type { ImagemEscolhida } from "./imagens.js";
 import { perguntarJson, perguntarTexto } from "./claude-code.js";
 import { triarLocal } from "./triagem-local.js";
 
@@ -115,7 +116,7 @@ const RascunhoSchema = z.object({
   buscaImagem: z
     .array(z.string())
     .describe(
-      "3 buscas para banco de imagens livres, do mais específico ao mais genérico. Descreva LUGARES, OBJETOS ou CENAS (ex.: 'Santa Maria Rio Grande do Sul catedral', 'ambulância', 'sala de aula universidade'). NUNCA nomes de pessoas.",
+      "3 buscas para banco de imagens livres, do mais específico ao mais genérico. A 1ª é o LUGAR REAL da notícia pelo nome (ex.: 'Universidade Federal de Santa Maria', 'Santa Maria Rio Grande do Sul catedral', 'Caçapava do Sul'). As outras são OBJETOS ou CENAS genéricas que não identificam outro lugar (ex.: 'urna eletrônica', 'ambulância', 'estudantes sala de aula'). Nunca peça prédio, fachada ou campus genérico: o banco devolve prédios de outras cidades. NUNCA nomes de pessoas.",
     ),
   descricaoImagem: z.string().describe("Texto alternativo (alt) para a imagem, descrevendo a cena"),
 });
@@ -153,6 +154,50 @@ export async function redigir(item: ItemColetado, material: string, orientacao?:
     throw new Error(`Redação sem resposta válida (stop_reason: ${resp.stop_reason})`);
   }
   return resp.parsed_output;
+}
+
+// ------------------------------------------------------- Conferência das fotos
+
+const EscolhaImagemSchema = z.object({
+  aprovadas: z
+    .array(z.number().int())
+    .describe("Números das fotos que servem, da melhor para a pior. Lista vazia se nenhuma servir."),
+});
+
+const SISTEMA_IMAGEM = `Você é editor de fotografia do ${config.siteNome}, portal de Santa Maria (RS).
+Recebe uma matéria e fotos candidatas de bancos livres, cada uma com o título, a descrição e as etiquetas do acervo.
+Aprove só as fotos que não enganam o leitor:
+- Se a foto mostra um lugar, prédio ou instituição identificável, ele TEM de ser o da matéria (ex.: matéria da UFSM só aceita foto da UFSM; prédio de outra cidade ou universidade é reprovado).
+- Cena ou objeto genérico (urna, ambulância, sala de aula, chuva) é aprovado quando combina com o assunto e não identifica outro lugar.
+- Reprove foto sem relação com o assunto, com descrição vaga demais para saber o que mostra, com pessoas identificáveis ligadas a outro fato, ou com logotipo de outra marca.
+Na dúvida, reprove: a matéria sai com o fundo da editoria, o que é melhor que uma foto errada.`;
+
+export async function escolherImagens(rascunho: Rascunho, candidatas: ImagemEscolhida[]): Promise<ImagemEscolhida[]> {
+  if (candidatas.length === 0) return [];
+  const lista = candidatas
+    .slice(0, 20)
+    .map((c, i) => `${i}. [${c.acervo}] ${c.descricao || "(sem descrição)"}`)
+    .join("\n");
+  const pedido = `Matéria: ${rascunho.titulo}\n${rascunho.subtitulo}\nEditoria: ${rascunho.categoria}\n\nFotos candidatas:\n${lista}`;
+
+  let aprovadas: number[];
+  if (!usarApi()) {
+    aprovadas = (await perguntarJson(pedido, EscolhaImagemSchema, { sistema: SISTEMA_IMAGEM })).aprovadas;
+  } else {
+    const resp = await client().beta.messages.parse({
+      model: config.modelo,
+      max_tokens: 2000,
+      ...FALLBACK,
+      output_config: { effort: "low", format: betaZodOutputFormat(EscolhaImagemSchema) },
+      system: SISTEMA_IMAGEM,
+      messages: [{ role: "user", content: pedido }],
+    });
+    aprovadas = resp.parsed_output?.aprovadas ?? [];
+  }
+  const vistos = new Set<number>();
+  return aprovadas
+    .filter((i) => candidatas[i] && !vistos.has(i) && vistos.add(i))
+    .map((i) => candidatas[i]);
 }
 
 export async function ajustar(rascunho: Rascunho, pedido: string): Promise<Rascunho> {

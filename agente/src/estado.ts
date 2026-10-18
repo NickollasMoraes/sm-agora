@@ -22,6 +22,7 @@ export type Registro = ItemColetado & {
   orientacao?: string; // o que você pediu ao aprovar/ajustar
   rascunho?: Rascunho;
   imagem?: ImagemEscolhida;
+  imagensAprovadas?: ImagemEscolhida[]; // fotos que a IA conferiu e aprovou para esta matéria, da melhor para a pior
   tentativaImagem?: number;
   mensagens: number[]; // IDs das mensagens do Telegram ligadas a este item
   atualizadoEm: string;
