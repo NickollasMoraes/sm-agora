@@ -93,16 +93,15 @@ cd agente && npm install && npm start
 - O git precisa estar logado no GitHub. O primeiro `git push` do Passo 2 já resolve isso.
 - Se o PC desligar, nada se perde: as pautas só esperam o agente voltar. Quando quiser sair do PC, o mesmo agente roda numa VPS de R$ 30/mês sem mudar código.
 
-## Passo 5 (opcional): Instagram automático
+## Passo 5: Instagram automático (já configurado para o @sm.agora)
 
-Sem configurar nada, a cada publicação o bot te manda **a arte pronta + a legenda** pra você postar em 30 segundos. Para postar sozinho:
+O agente posta sozinho a cada matéria publicada, usando a API oficial (Login do Instagram, sem Página do Facebook).
 
-1. Transforme o Instagram em **conta Profissional** e ligue a uma **Página do Facebook**.
-2. Em developers.facebook.com, crie um app do tipo **Business** e adicione o produto **Instagram Graph API**.
-3. Gere um token de longa duração com as permissões `instagram_basic`, `instagram_content_publish` e `pages_show_list`, e descubra o **ID da conta do Instagram**.
-4. Preencha `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN` no `.env`.
-
-Atenção: o token de longa duração vence em 60 dias e precisa ser renovado.
+- **App na Meta:** "SM Agora Publicador" em developers.facebook.com > Meus apps.
+- **No `.env`:** `INSTAGRAM_USER_ID` e `INSTAGRAM_ACCESS_TOKEN` (já preenchidos).
+- **Token:** vale 60 dias, e o agente o renova sozinho toda segunda às 4h. Se o PC ficar desligado por mais de 60 dias seguidos, gere outro token no app (Casos de uso > API do Instagram > Gerar tokens de acesso > Gerar token) e cole no `.env`.
+- **Se a postagem falhar**, o bot avisa no Telegram e manda a arte + legenda pra você postar manualmente.
+- Para voltar ao modo manual, apague o `INSTAGRAM_ACCESS_TOKEN` do `.env`.
 
 ---
 
