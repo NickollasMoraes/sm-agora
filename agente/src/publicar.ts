@@ -71,10 +71,16 @@ export async function publicar(
 }
 
 // Commit + push de arquivos do site (caminhos relativos à raiz do projeto). O GitHub Pages publica em 1 a 3 min.
-export async function enviarAoGitHub(caminhos: string[], mensagem: string): Promise<void> {
+// Uma operação de git por vez: matéria e Reels podem ser publicados quase juntos.
+let filaGit: Promise<unknown> = Promise.resolve();
+export function enviarAoGitHub(caminhos: string[], mensagem: string): Promise<void> {
   const git = (...args: string[]) => exec("git", args, { cwd: config.pastas.raiz });
-  await git("add", ...caminhos);
-  await git("commit", "-m", mensagem);
-  await git("pull", "--rebase", "--autostash");
-  await git("push");
+  const vez = filaGit.then(async () => {
+    await git("add", ...caminhos);
+    await git("commit", "-m", mensagem);
+    await git("pull", "--rebase", "--autostash");
+    await git("push");
+  });
+  filaGit = vez.catch(() => {});
+  return vez;
 }

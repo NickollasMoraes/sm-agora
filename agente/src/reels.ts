@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { capaReels } from "./arte.js";
 import { instagramConfigurado, postarReels } from "./instagram.js";
 import { enviarAoGitHub } from "./publicar.js";
+import { marcaDagua } from "./video.js";
 
 // Vídeos enviados por você no Telegram viram Reels com capa no padrão do portal.
 // Legenda do vídeo no Telegram: 1ª linha = título da capa; o resto (opcional) = legenda do post.
@@ -82,7 +83,8 @@ export async function receberVideo(
   const resp = await fetch(`https://api.telegram.org/file/bot${config.telegramToken}/${info.file_path}`);
   if (!resp.ok) throw new Error(`Não consegui baixar o vídeo do Telegram (HTTP ${resp.status})`);
   fs.mkdirSync(pasta, { recursive: true });
-  fs.writeFileSync(arquivoVideo(id), Buffer.from(await resp.arrayBuffer()));
+  await bot.api.sendMessage(chat, "🏷 Colocando a marca d'água…");
+  fs.writeFileSync(arquivoVideo(id), await marcaDagua(Buffer.from(await resp.arrayBuffer())));
 
   const legendaExtra = resto.join("\n").trim();
   reels[id] = {
@@ -167,25 +169,34 @@ export async function botaoReel(bot: Bot, acao: string, id: string): Promise<str
 
 async function publicar(bot: Bot, id: string): Promise<void> {
   const r = reels[id];
-  const chat = config.telegramChatId;
-  // A API do Instagram só aceita vídeo e capa por URL pública: os dois vão para o site primeiro.
-  // A capa fica; o vídeo sai do site assim que o Instagram termina de baixá-lo.
-  const videoNoSite = path.join(config.pastas.capasReels, `${id}.mp4`);
-  fs.mkdirSync(config.pastas.capasReels, { recursive: true });
-  fs.copyFileSync(arquivoCapa(id), path.join(config.pastas.capasReels, `${id}.jpg`));
-  fs.copyFileSync(arquivoVideo(id), videoNoSite);
-  await bot.api.sendMessage(chat, "⏳ Enviando vídeo e capa pelo site para o Instagram. Leva de 3 a 6 minutos.");
-  await enviarAoGitHub(["site/public/imagens/reels"], `Reels: ${r.titulo}`);
+  await bot.api.sendMessage(config.telegramChatId, "⏳ Enviando vídeo e capa pelo site para o Instagram. Leva de 3 a 6 minutos.");
+  const link = await publicarReelsPeloSite(id, fs.readFileSync(arquivoVideo(id)), fs.readFileSync(arquivoCapa(id)), r.legenda, r.titulo, true);
+  r.status = "publicado";
+  fs.rmSync(arquivoVideo(id), { force: true });
+  salvar();
+  await bot.api.sendMessage(config.telegramChatId, `📸 Reels publicado: ${link}`);
+}
 
-  const base = `${config.siteUrl}/imagens/reels/${id}`;
+// A API do Instagram só aceita vídeo e capa por URL pública: os dois vão para o site primeiro.
+// A capa fica; o vídeo sai do site assim que o Instagram termina de baixá-lo. Devolve o link do post.
+export async function publicarReelsPeloSite(
+  nome: string,
+  video: Buffer,
+  capa: Buffer,
+  legenda: string,
+  titulo: string,
+  noFeed: boolean,
+): Promise<string> {
+  const videoNoSite = path.join(config.pastas.capasReels, `${nome}.mp4`);
+  fs.mkdirSync(config.pastas.capasReels, { recursive: true });
+  fs.writeFileSync(path.join(config.pastas.capasReels, `${nome}.jpg`), capa);
+  fs.writeFileSync(videoNoSite, video);
+  await enviarAoGitHub(["site/public/imagens/reels"], `Reels: ${titulo}`);
+  const base = `${config.siteUrl}/imagens/reels/${nome}`;
   try {
-    const link = await postarReels(`${base}.mp4`, `${base}.jpg`, r.legenda);
-    r.status = "publicado";
-    fs.rmSync(arquivoVideo(id), { force: true });
-    salvar();
-    await bot.api.sendMessage(chat, `📸 Reels publicado: ${link}`);
+    return await postarReels(`${base}.mp4`, `${base}.jpg`, legenda, noFeed);
   } finally {
     fs.rmSync(videoNoSite, { force: true });
-    await enviarAoGitHub(["site/public/imagens/reels"], `Remove vídeo do Reels: ${r.titulo}`).catch(() => {});
+    await enviarAoGitHub(["site/public/imagens/reels"], `Remove vídeo do Reels: ${titulo}`).catch(() => {});
   }
 }

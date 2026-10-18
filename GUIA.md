@@ -105,13 +105,17 @@ O agente posta sozinho a cada matéria publicada, usando a API oficial (Login do
 
 ### Reels a partir de um vídeo seu
 
-1. Mande o vídeo para o bot no Telegram. Na legenda do vídeo, a **1ª linha** vira o título da capa e o resto (opcional) vira a legenda do post. Sem legenda, o bot pergunta o título.
+1. Mande o vídeo para o bot no Telegram. Na legenda do vídeo, a **1ª linha** vira o título da capa e o resto (opcional) vira a legenda do post. Sem legenda, o bot pergunta o título. O bot coloca a marca d'água "SM. AGORA" no canto de cima (como as grandes páginas fazem, para o vídeo levar o nome do portal quando circular no WhatsApp).
 2. O bot devolve a capa no padrão do portal com **[Publicar Reels] [Trocar título] [Descartar]**.
 3. Ao publicar, vídeo e capa passam pelo site (a API do Instagram só aceita arquivos por link público), o Reels vai ao ar e o vídeo é apagado do site em seguida. Leva de 3 a 6 minutos.
 
 - **Limite de 20 MB:** é o máximo que o Telegram deixa um bot baixar. Mande como vídeo normal (não como arquivo) que o Telegram comprime; vídeos de até 1 a 2 minutos costumam caber.
 - O Instagram aceita Reels de 3 segundos a 15 minutos, de preferência na vertical (9:16).
 - Cada vídeo passa pelo histórico do git. Se o repositório ficar pesado com o tempo (o GitHub recomenda até 1 GB), dá para migrar os vídeos para outro serviço.
+
+### Reels automático de cada matéria
+
+Depois de postar a arte de uma matéria, o agente gera um vídeo de 8 segundos (foto com zoom lento, manchete surgindo e "Matéria completa → link na bio") e publica como Reels. Ele aparece só na aba Reels e nas recomendações do Instagram, sem repetir o post na grade do perfil. Cada um tem cerca de 1 MB. Para desligar, coloque `REELS_MATERIAS=false` no `agente/.env`.
 
 ---
 

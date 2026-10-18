@@ -77,7 +77,8 @@ async function esperarProcessamento(container: string, minutos: number): Promise
 
 // Reels: com o Login do Instagram a API não aceita upload direto (exige video_url), então vídeo e
 // capa precisam estar em URL pública. Devolve o link do post.
-export async function postarReels(urlVideo: string, urlCapa: string, legenda: string): Promise<string> {
+// noFeed=false: o Reels aparece só na aba Reels (e nas recomendações), sem repetir o post na grade do perfil.
+export async function postarReels(urlVideo: string, urlCapa: string, legenda: string, noFeed = true): Promise<string> {
   await esperarUrlNoAr(urlCapa);
   await esperarUrlNoAr(urlVideo);
   const container = await chamar(`${await contaId()}/media`, {
@@ -85,7 +86,7 @@ export async function postarReels(urlVideo: string, urlCapa: string, legenda: st
     video_url: urlVideo,
     cover_url: urlCapa,
     caption: legenda,
-    share_to_feed: "true",
+    share_to_feed: String(noFeed),
   });
   await esperarProcessamento(container, 15);
   const id = await chamar(`${await contaId()}/media_publish`, { creation_id: container });

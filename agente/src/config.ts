@@ -38,6 +38,8 @@ export const config = {
   // Instagram (opcional: sem isso, o bot manda a arte pronta para você postar)
   igUserId: process.env.INSTAGRAM_USER_ID ?? "",
   igToken: process.env.INSTAGRAM_ACCESS_TOKEN ?? "",
+  // Reels curto (8 s) de cada matéria, além do post da arte. Só na aba Reels, sem repetir na grade.
+  reelsMaterias: (process.env.REELS_MATERIAS ?? "true") === "true",
 
   siteUrl: (process.env.SITE_URL ?? "https://smagora.com.br").replace(/\/$/, ""),
   siteNome: process.env.SITE_NOME ?? "SM Agora",

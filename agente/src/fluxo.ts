@@ -7,9 +7,11 @@ import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
 import { ajustar, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
 import { baixarImagem, buscarCandidatas } from "./imagens.js";
-import { arteInstagram, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
+import { arteInstagram, camadasReelsMateria, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
 import { publicar } from "./publicar.js";
 import { instagramConfigurado, postarNoInstagram } from "./instagram.js";
+import { publicarReelsPeloSite } from "./reels.js";
+import { videoDaMateria } from "./video.js";
 
 const h = (s = "") => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const pastaPrevias = path.join(config.pastas.dados, "previas");
@@ -202,6 +204,18 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
     }
   } else {
     await enviarArteManual(bot, arte, legenda);
+  }
+
+  if (config.reelsMaterias && instagramConfigurado() && pub.enviadoAoGitHub) {
+    try {
+      const credito = r.imagem ? `${r.imagem.autor} / ${r.imagem.acervo}` : undefined;
+      const camadas = await camadasReelsMateria(r.imagem ? foto : null, r.rascunho!.tituloArte, r.rascunho!.categoria, credito);
+      const video = await videoDaMateria(camadas.fundo, camadas.camada);
+      const link = await publicarReelsPeloSite(pub.slug, video, camadas.capa, legenda, r.rascunho!.tituloArte, false);
+      await bot.api.sendMessage(config.telegramChatId, `🎬 Reels da matéria publicado: ${link}`);
+    } catch (e) {
+      await bot.api.sendMessage(config.telegramChatId, `⚠️ Reels da matéria não publicado: ${(e as Error).message}`);
+    }
   }
 
   fs.rmSync(arquivoPrevia(id, "foto"), { force: true });

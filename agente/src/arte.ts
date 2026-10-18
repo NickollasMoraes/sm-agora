@@ -182,4 +182,63 @@ export async function capaReels(titulo: string): Promise<Buffer> {
   return sharp(Buffer.from(svg)).jpeg({ quality: 92, mozjpeg: true }).toBuffer();
 }
 
+// Selo para marca d'água em vídeo: PNG transparente com fundo escuro translúcido (legível em qualquer imagem).
+export async function seloMarcaDagua(largura = 200): Promise<Buffer> {
+  const escala = largura / 170;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${largura}" height="${Math.round(124 * escala)}">
+  <rect width="100%" height="100%" rx="${14 * escala}" fill="${TINTA}" fill-opacity="0.55"/>
+  ${selo(18 * escala, 10 * escala, escala)}
+</svg>`;
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+// Reels de uma matéria: duas camadas 1080x1920 que o ffmpeg anima (zoom lento no fundo, texto surgindo).
+// Fundo: a foto na parte de cima (ou o degradê da marca). Camada: painel, etiqueta, manchete e chamada.
+export async function camadasReelsMateria(foto: Buffer | null, titulo: string, categoria: string, credito?: string) {
+  const L = 1080;
+  const A = 1920;
+  const cor = coresCategoria[categoria] ?? MARCA;
+  const { linhas, tamanho } = foto ? ajustarManchete(titulo, L - 128, 4, 88, 60) : ajustarManchete(titulo, L - 128, 5, 96, 64);
+  const alturaTexto = tamanho * 1.12 * linhas.length;
+
+  let fundo: Buffer;
+  let topoTexto: number;
+  if (foto) {
+    // A foto encolhe quando a manchete é longa, para sobrar espaço para manchete, chamada e crédito.
+    const altFoto = Math.min(1100, Math.round(A - 420 - alturaTexto));
+    fundo = await sharp({ create: { width: L, height: A, channels: 3, background: TINTA } })
+      .composite([{ input: await sharp(foto).resize(L, altFoto, { fit: "cover", position: "attention" }).toBuffer(), top: 0, left: 0 }])
+      .jpeg({ quality: 90 })
+      .toBuffer();
+    topoTexto = altFoto + 40;
+  } else {
+    const svgFundo = `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${A}">
+  <defs><radialGradient id="g" cx="0.3" cy="0.35" r="0.9"><stop offset="0" stop-color="${TINTA_CLARA}"/><stop offset="1" stop-color="${TINTA}"/></radialGradient></defs>
+  <rect width="${L}" height="${A}" fill="url(#g)"/>
+  <text x="${L + 60}" y="${A - 160}" text-anchor="end" font-family="${FONTE_FORTE}" font-weight="900" font-size="720" fill="#fff" fill-opacity="0.04" letter-spacing="-24">SM.</text>
+</svg>`;
+    fundo = await sharp(Buffer.from(svgFundo)).jpeg({ quality: 90 }).toBuffer();
+    topoTexto = Math.max(700, 960 - alturaTexto / 2);
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${A}">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TINTA}" stop-opacity="0"/><stop offset="1" stop-color="${TINTA}"/></linearGradient>
+    <linearGradient id="topo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TINTA}" stop-opacity="0.7"/><stop offset="1" stop-color="${TINTA}" stop-opacity="0"/></linearGradient>
+  </defs>
+  ${foto ? `<rect width="${L}" height="380" fill="url(#topo)"/><rect y="${topoTexto - 340}" width="${L}" height="300" fill="url(#base)"/><rect y="${topoTexto - 41}" width="${L}" height="${A - topoTexto + 41}" fill="${TINTA}"/>` : ""}
+  <rect width="16" height="${A}" fill="${cor}"/>
+  ${selo(64, 220)}
+  ${etiqueta(64, topoTexto - (foto ? 20 : 80), categoria)}
+  ${manchete(64, topoTexto + (foto ? 50 : 0), linhas, tamanho)}
+  <text x="64" y="${topoTexto + (foto ? 50 : 0) + alturaTexto + 100}" font-family="${FONTE}" font-weight="700" font-size="36" fill="#fff">Matéria completa <tspan fill="${PONTO}">→</tspan> link na bio</text>
+  ${credito ? `<text x="64" y="${A - 60}" font-family="${FONTE}" font-size="22" fill="#fff" fill-opacity="0.55">Foto: ${esc(credito.slice(0, 60))}</text>` : ""}
+  <rect y="${A - 14}" width="${L}" height="14" fill="${MARCA}"/>
+</svg>`;
+  const camada = await sharp(Buffer.from(svg)).png().toBuffer();
+  // Capa do Reels = fundo + camada (o quadro final do vídeo)
+  const capa = await sharp(fundo).composite([{ input: camada }]).jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+  return { fundo, camada, capa };
+}
+
 export const urlArte =(slug: string) => `${config.siteUrl}/imagens/instagram/${slug}.jpg`;
