@@ -1,12 +1,25 @@
 import { config } from "./config.js";
 
-// Publicação automática pela API oficial do Instagram (Graph API).
-// Exige conta Profissional ligada a uma Página do Facebook e um token de acesso de longa duração.
+// Publicação automática pela API oficial do Instagram.
+// Funciona com os dois tipos de token da Meta:
+// - "Login do Instagram" (começa com IG...): só precisa de conta Profissional, sem Página do Facebook
+// - "Login do Facebook" (começa com EA...): conta Profissional ligada a uma Página do Facebook
 // A API só aceita imagem por URL pública, por isso esperamos o site terminar o deploy.
 
-const API = "https://graph.facebook.com/v21.0";
+const API = config.igToken.startsWith("IG") ? "https://graph.instagram.com/v21.0" : "https://graph.facebook.com/v21.0";
 
-export const instagramConfigurado = () => Boolean(config.igUserId && config.igToken);
+export const instagramConfigurado = () => Boolean(config.igToken);
+
+let idConta = config.igUserId;
+async function contaId(): Promise<string> {
+  if (idConta) return idConta;
+  // Sem INSTAGRAM_USER_ID: descobre pela própria conta do token (Login do Instagram)
+  const r = await fetch(`${API}/me?fields=user_id,username&access_token=${config.igToken}`);
+  const dados = (await r.json()) as { user_id?: string; id?: string; error?: { message: string } };
+  idConta = dados.user_id ?? dados.id ?? "";
+  if (!idConta) throw new Error(`Instagram: não consegui identificar a conta (${dados.error?.message ?? r.status})`);
+  return idConta;
+}
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -32,7 +45,7 @@ async function chamar(caminho: string, params: Record<string, string>) {
 
 export async function postarNoInstagram(urlImagem: string, legenda: string): Promise<string> {
   await esperarUrlNoAr(urlImagem);
-  const container = await chamar(`${config.igUserId}/media`, { image_url: urlImagem, caption: legenda });
+  const container = await chamar(`${await contaId()}/media`, { image_url: urlImagem, caption: legenda });
 
   // Aguarda o Instagram processar a imagem
   for (let i = 0; i < 12; i++) {
@@ -42,5 +55,5 @@ export async function postarNoInstagram(urlImagem: string, legenda: string): Pro
     if (status_code === "ERROR") throw new Error("Instagram recusou a imagem.");
     await esperar(5000);
   }
-  return chamar(`${config.igUserId}/media_publish`, { creation_id: container });
+  return chamar(`${await contaId()}/media_publish`, { creation_id: container });
 }

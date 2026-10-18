@@ -40,7 +40,7 @@ export const config = {
 
   siteUrl: (process.env.SITE_URL ?? "https://smagora.com.br").replace(/\/$/, ""),
   siteNome: process.env.SITE_NOME ?? "SM Agora",
-  instagramArroba: process.env.INSTAGRAM_ARROBA ?? "smagora",
+  instagramArroba: process.env.INSTAGRAM_ARROBA || "sm.agora",
   gitPush: (process.env.GIT_PUSH ?? "true") === "true",
 
   pastas: {
