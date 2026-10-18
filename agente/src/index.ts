@@ -2,6 +2,7 @@ import { Bot } from "grammy";
 import cron from "node-cron";
 import { config } from "./config.js";
 import { claudeCodeLogado } from "./claude-code.js";
+import { instagramConfigurado, renovarToken } from "./instagram.js";
 import * as db from "./estado.js";
 import { ajustarTexto, aprovar, montarPrevia, publicarItem, rodarColeta, trocarImagem } from "./fluxo.js";
 
@@ -115,11 +116,14 @@ bot.on("message:text", async (ctx) => {
 
 bot.catch((e) => console.error("[bot]", e.message));
 
+// Renova o token do Instagram toda segunda-feira às 4h (ele vence em 60 dias)
+cron.schedule("0 4 * * 1", () => tarefa("token Instagram", renovarToken), { timezone: "America/Sao_Paulo" });
+
 // Agenda da coleta automática
 cron.schedule(config.cronColeta, () => tarefa("coleta", () => rodarColeta(bot)), { timezone: "America/Sao_Paulo" });
 
 const modoIa = config.iaProvedor === "api" ? `API paga (${config.modelo})` : "seu plano do Claude (Claude Code)";
-console.log(`Agente iniciado. Coleta: "${config.cronColeta}". IA: ${modoIa}. Triagem: ${config.triagem}.`);
+console.log(`Agente iniciado. Coleta: "${config.cronColeta}". IA: ${modoIa}. Triagem: ${config.triagem}. Instagram: ${instagramConfigurado() ? "automático" : "manual"}.`);
 if (config.iaProvedor === "claude-code" && !(await claudeCodeLogado())) {
   console.warn("ATENÇÃO: o Claude Code não está logado. Rode 'claude auth login' no terminal.");
   if (config.telegramChatId) await bot.api.sendMessage(config.telegramChatId, "⚠️ O Claude Code não está logado no PC. Rode 'claude auth login' no terminal.").catch(() => {});

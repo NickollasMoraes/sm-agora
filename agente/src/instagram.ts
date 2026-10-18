@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 
 // Publicação automática pela API oficial do Instagram.
@@ -9,6 +12,22 @@ import { config } from "./config.js";
 const API = config.igToken.startsWith("IG") ? "https://graph.instagram.com/v21.0" : "https://graph.facebook.com/v21.0";
 
 export const instagramConfigurado = () => Boolean(config.igToken);
+
+// Tokens do Login do Instagram valem 60 dias. Renovamos toda semana e gravamos no .env,
+// assim o agente nunca perde o acesso enquanto estiver rodando.
+export async function renovarToken(): Promise<void> {
+  if (!config.igToken.startsWith("IG")) return;
+  const r = await fetch(
+    `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${config.igToken}`,
+  );
+  const dados = (await r.json()) as { access_token?: string; expires_in?: number; error?: { message: string } };
+  if (!dados.access_token) throw new Error(`Instagram: não consegui renovar o token (${dados.error?.message ?? r.status})`);
+  const arquivo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".env");
+  const env = fs.readFileSync(arquivo, "utf8").replace(/^INSTAGRAM_ACCESS_TOKEN=.*$/m, `INSTAGRAM_ACCESS_TOKEN=${dados.access_token}`);
+  fs.writeFileSync(arquivo, env);
+  config.igToken = dados.access_token;
+  console.log(`[instagram] token renovado (vale mais ${Math.round((dados.expires_in ?? 0) / 86400)} dias)`);
+}
 
 let idConta = config.igUserId;
 async function contaId(): Promise<string> {
