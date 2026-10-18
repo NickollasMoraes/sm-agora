@@ -1,6 +1,7 @@
 import { Bot } from "grammy";
 import cron from "node-cron";
 import { config } from "./config.js";
+import { claudeCodeLogado } from "./claude-code.js";
 import * as db from "./estado.js";
 import { ajustarTexto, aprovar, montarPrevia, publicarItem, rodarColeta, trocarImagem } from "./fluxo.js";
 
@@ -117,7 +118,12 @@ bot.catch((e) => console.error("[bot]", e.message));
 // Agenda da coleta automática
 cron.schedule(config.cronColeta, () => tarefa("coleta", () => rodarColeta(bot)), { timezone: "America/Sao_Paulo" });
 
-console.log(`Agente iniciado. Coleta: "${config.cronColeta}". Modelo: ${config.modelo}.`);
+const modoIa = config.iaProvedor === "api" ? `API paga (${config.modelo})` : "seu plano do Claude (Claude Code)";
+console.log(`Agente iniciado. Coleta: "${config.cronColeta}". IA: ${modoIa}. Triagem: ${config.triagem}.`);
+if (config.iaProvedor === "claude-code" && !(await claudeCodeLogado())) {
+  console.warn("ATENÇÃO: o Claude Code não está logado. Rode 'claude auth login' no terminal.");
+  if (config.telegramChatId) await bot.api.sendMessage(config.telegramChatId, "⚠️ O Claude Code não está logado no PC. Rode 'claude auth login' no terminal.").catch(() => {});
+}
 if (!config.telegramChatId) console.log("Mande /start para o seu bot no Telegram para descobrir o TELEGRAM_CHAT_ID.");
 if (process.argv.includes("--coletar-agora")) tarefa("coleta", () => rodarColeta(bot, true));
 

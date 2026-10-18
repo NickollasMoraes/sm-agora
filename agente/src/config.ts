@@ -15,13 +15,20 @@ export const config = {
   // Vazio no primeiro uso: mande /start para o bot e ele responde com o número do chat.
   telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
 
+  // "claude-code" = usa seu plano do Claude (sem custo extra). "api" = API paga (ANTHROPIC_API_KEY).
+  iaProvedor: (process.env.IA_PROVEDOR || "claude-code") as "claude-code" | "api",
+  // "local" = triagem por palavras-chave (grátis). "ia" = triagem feita pela IA.
+  triagem: (process.env.TRIAGEM || "local") as "local" | "ia",
+  // Modelo no Claude Code (vazio = padrão do seu plano). Ex.: opus, sonnet
+  modeloClaudeCode: process.env.MODELO_CLAUDE_CODE || "",
+
   modelo: process.env.MODELO_IA || "claude-opus-5-5",
   // A triagem roda a cada 30 min; um modelo mais barato aqui reduz bastante o custo.
   modeloTriagem: process.env.MODELO_TRIAGEM || process.env.MODELO_IA || "claude-opus-5-5",
 
   // Coleta
   cronColeta: process.env.CRON_COLETA ?? "*/30 6-23 * * *", // a cada 30 min, das 6h às 23h
-  notaMinima: Number(process.env.NOTA_MINIMA ?? 6),
+  notaMinima: Number(process.env.NOTA_MINIMA || 7),
   maxPautasPorRodada: Number(process.env.MAX_PAUTAS_POR_RODADA ?? 8),
 
   // Imagens (opcional: sem chave, usa só Wikimedia Commons)

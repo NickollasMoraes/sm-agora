@@ -3,8 +3,15 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { categorias, config } from "./config.js";
 import type { ItemColetado } from "./coletor.js";
+import { perguntarJson, perguntarTexto } from "./claude-code.js";
+import { triarLocal } from "./triagem-local.js";
 
-const client = new Anthropic(); // lê ANTHROPIC_API_KEY do .env
+// Dois jeitos de usar o Claude (IA_PROVEDOR no .env):
+// "claude-code": usa o seu plano do Claude pelo Claude Code instalado no PC (sem custo extra)
+// "api":         usa a API paga da Anthropic (ANTHROPIC_API_KEY)
+const usarApi = () => config.iaProvedor === "api";
+let _client: Anthropic | undefined;
+const client = () => (_client ??= new Anthropic()); // lê ANTHROPIC_API_KEY do .env
 
 // Fallback automático: se o modelo recusar um pedido, a API tenta outro modelo na mesma chamada.
 const FALLBACK = {
@@ -40,19 +47,17 @@ Avalie TODOS os itens recebidos, usando o mesmo id.`;
 
 export async function triar(itens: ItemColetado[], jaVistos: string[]): Promise<Triagem[]> {
   if (itens.length === 0) return [];
+  if (config.triagem === "local") return triarLocal(itens, jaVistos);
   const lista = itens.map((i) => ({ id: i.id, fonte: i.fonte, titulo: i.titulo, resumo: i.resumo.slice(0, 300) }));
-  const resp = await client.beta.messages.parse({
+  const conteudo = `Títulos já vistos nas últimas 72h:\n${jaVistos.slice(-150).join("\n") || "(nenhum)"}\n\nItens novos:\n${JSON.stringify(lista, null, 1)}`;
+  if (!usarApi()) return (await perguntarJson(conteudo, TriagemSchema, { sistema: SISTEMA_TRIAGEM })).avaliacoes;
+  const resp = await client().beta.messages.parse({
     model: config.modeloTriagem,
     max_tokens: 16000,
     ...FALLBACK,
     output_config: { effort: "low", format: betaZodOutputFormat(TriagemSchema) },
     system: [{ type: "text", text: SISTEMA_TRIAGEM, cache_control: { type: "ephemeral" } }],
-    messages: [
-      {
-        role: "user",
-        content: `Títulos já vistos nas últimas 72h:\n${jaVistos.slice(-150).join("\n") || "(nenhum)"}\n\nItens novos:\n${JSON.stringify(lista, null, 1)}`,
-      },
-    ],
+    messages: [{ role: "user", content: conteudo }],
   });
   if (resp.stop_reason === "refusal" || !resp.parsed_output) {
     throw new Error(`Triagem sem resposta válida (stop_reason: ${resp.stop_reason})`);
@@ -63,6 +68,16 @@ export async function triar(itens: ItemColetado[], jaVistos: string[]): Promise<
 // ---------------------------------------------------------------- Pesquisa (quando a página original não pôde ser lida)
 
 export async function pesquisarFatos(titulo: string, fonte: string): Promise<string> {
+  if (!usarApi()) {
+    return perguntarTexto(
+      `Pesquise na web a notícia "${titulo}" (fonte: ${fonte}), de Santa Maria/RS. Liste os fatos verificáveis (o quê, quem, quando, onde, números, citações curtas com autor) e os links das fontes consultadas. Responda só com os fatos, em português.`,
+      {
+        sistema: "Você é pesquisador de uma redação jornalística. Busque e relate apenas fatos verificáveis, com as fontes.",
+        ferramentas: ["WebSearch", "WebFetch"],
+        minutos: 10,
+      },
+    );
+  }
   const messages: Anthropic.MessageParam[] = [
     {
       role: "user",
@@ -71,7 +86,7 @@ export async function pesquisarFatos(titulo: string, fonte: string): Promise<str
   ];
   let texto = "";
   for (let rodada = 0; rodada < 3; rodada++) {
-    const resp = await client.messages.create({
+    const resp = await client().messages.create({
       model: config.modelo,
       max_tokens: 16000,
       output_config: { effort: "low" },
@@ -125,7 +140,8 @@ export async function redigir(item: ItemColetado, material: string, orientacao?:
     .filter(Boolean)
     .join("\n\n");
 
-  const resp = await client.beta.messages.parse({
+  if (!usarApi()) return perguntarJson(pedido, RascunhoSchema, { sistema: SISTEMA_REDACAO });
+  const resp = await client().beta.messages.parse({
     model: config.modelo,
     max_tokens: 16000,
     ...FALLBACK,
@@ -140,18 +156,15 @@ export async function redigir(item: ItemColetado, material: string, orientacao?:
 }
 
 export async function ajustar(rascunho: Rascunho, pedido: string): Promise<Rascunho> {
-  const resp = await client.beta.messages.parse({
+  const conteudo = `Esta é a matéria atual:\n${JSON.stringify(rascunho, null, 1)}\n\nAplique este pedido do editor e devolva a matéria completa: ${pedido}`;
+  if (!usarApi()) return perguntarJson(conteudo, RascunhoSchema, { sistema: SISTEMA_REDACAO });
+  const resp = await client().beta.messages.parse({
     model: config.modelo,
     max_tokens: 16000,
     ...FALLBACK,
     output_config: { effort: "medium", format: betaZodOutputFormat(RascunhoSchema) },
     system: [{ type: "text", text: SISTEMA_REDACAO, cache_control: { type: "ephemeral" } }],
-    messages: [
-      {
-        role: "user",
-        content: `Esta é a matéria atual:\n${JSON.stringify(rascunho, null, 1)}\n\nAplique este pedido do editor e devolva a matéria completa: ${pedido}`,
-      },
-    ],
+    messages: [{ role: "user", content: conteudo }],
   });
   if (resp.stop_reason === "refusal" || !resp.parsed_output) {
     throw new Error(`Ajuste sem resposta válida (stop_reason: ${resp.stop_reason})`);
