@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Anuncio } from "@/components/Anuncio";
+import { ChamadaCanalWhatsApp } from "@/components/CanalWhatsApp";
 import { CardNoticia, Selo } from "@/components/CardNoticia";
 import { caminhoAsset, categoriaPorSlug, site } from "@/lib/config";
 import { formatarDataHora, noticiaPorSlug, relacionadas, todasNoticias } from "@/lib/noticias";
@@ -50,9 +51,19 @@ export default async function PaginaNoticia({ params }: Params) {
     image: [new URL(caminhoAsset(n.imagem), site.url).toString()],
     datePublished: n.data,
     dateModified: n.atualizado ?? n.data,
-    author: { "@type": "Organization", name: `Redação ${site.nome}` },
-    publisher: { "@type": "Organization", name: site.nome },
+    author: { "@type": "Organization", name: `Redação ${site.nome}`, url: `${site.url}/sobre/` },
+    publisher: {
+      "@type": "NewsMediaOrganization",
+      name: site.nome,
+      url: `${site.url}/`,
+      logo: { "@type": "ImageObject", url: new URL(caminhoAsset(site.logo), site.url).toString() },
+    },
     mainEntityOfPage: `${site.url}/noticia/${n.slug}/`,
+    articleSection: categoriaPorSlug(n.categoria).nome,
+    keywords: n.tags.join(", "),
+    inLanguage: "pt-BR",
+    isAccessibleForFree: true,
+    contentLocation: { "@type": "Place", name: `${site.cidade}, ${site.estado}` },
   };
 
   return (
@@ -103,6 +114,8 @@ export default async function PaginaNoticia({ params }: Params) {
       </figure>
 
       <div className="materia mt-8" dangerouslySetInnerHTML={{ __html: n.html }} />
+
+      <ChamadaCanalWhatsApp />
 
       {n.fontes.length > 0 && (
         <aside className="mt-8 rounded-lg bg-fundo-suave p-4 text-sm">

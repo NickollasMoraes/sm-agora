@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotaoCanalWhatsApp } from "@/components/CanalWhatsApp";
 import { categorias, site } from "@/lib/config";
 
 export function Rodape() {
@@ -38,6 +39,7 @@ export function Rodape() {
           >
             @{site.instagram} no Instagram
           </a>
+          <BotaoCanalWhatsApp className="mt-2" />
         </div>
       </div>
       <p className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/60">

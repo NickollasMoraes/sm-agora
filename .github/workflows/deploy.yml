@@ -37,6 +37,8 @@ jobs:
           NEXT_PUBLIC_SITE_URL: ${{ vars.SITE_URL }}
           NEXT_PUBLIC_BASE_PATH: ${{ vars.BASE_PATH }}
           NEXT_PUBLIC_ADSENSE_CLIENT: ${{ vars.ADSENSE_CLIENT }}
+          NEXT_PUBLIC_GA_ID: ${{ vars.GA_ID }}
+          NEXT_PUBLIC_WHATSAPP_CANAL: ${{ vars.WHATSAPP_CANAL }}
       - name: Domínio próprio (CNAME)
         if: ${{ vars.DOMINIO != '' }}
         run: echo "${{ vars.DOMINIO }}" > out/CNAME

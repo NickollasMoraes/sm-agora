@@ -26,6 +26,11 @@ export function Cabecalho() {
             <a href={`https://instagram.com/${site.instagram}`} className="hidden hover:text-white sm:inline">
               @{site.instagram}
             </a>
+            {site.whatsappCanal && (
+              <a href={site.whatsappCanal} target="_blank" rel="noopener" className="hidden hover:text-white sm:inline">
+                WhatsApp
+              </a>
+            )}
           </span>
         </div>
       </div>

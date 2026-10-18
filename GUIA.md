@@ -147,6 +147,22 @@ No modo padrão, cada matéria usa um pouco do limite do seu plano do Claude (o 
 4. **Instagram:** com ~5 mil seguidores locais, venda posts e stories no combo com o site.
 5. **Google Notícias:** cadastre o site no Google Publisher Center, que traz tráfego gratuito.
 
+### Medição, Google Notícias e canal de WhatsApp
+
+O site já vem pronto para os três. Cada um liga quando você cria a variável no GitHub (**Settings > Secrets and variables > Actions > Variables**) e roda o workflow "Publicar site" de novo:
+
+| Variável | O que é | Onde conseguir |
+|---|---|---|
+| `GA_ID` | Google Analytics 4 (visitas, páginas mais lidas, de onde vem o público) | analytics.google.com > Admin > Criar propriedade > Fluxo da Web com o seu domínio. Copie o "ID da métrica" (`G-...`). |
+| `WHATSAPP_CANAL` | Link do canal de WhatsApp. Aparece no topo, no rodapé e no fim de cada matéria. | No WhatsApp do celular: **Atualizações > + > Criar canal**. Depois, no canal, **Compartilhar > Copiar link**. |
+
+**Google Search Console e Google Notícias (sem variável):**
+1. Em search.google.com/search-console, adicione o domínio e confirme pelo registro DNS que o próprio Search Console mostra.
+2. Em **Sitemaps**, envie `sitemap.xml` e `sitemap-noticias.xml` (este lista só as matérias dos últimos 2 dias, como o Google pede).
+3. Em publishercenter.google.com, cadastre a publicação "SM Agora" com o mesmo domínio, idioma português e local Santa Maria (RS).
+
+Cada matéria já leva os dados estruturados de notícia (título, data, editoria, logo do portal em `site/public/logo.png`) que o Google usa no Notícias e no Discover.
+
 **Meta realista:** 1 a 2 anunciantes locais nos primeiros 3 meses cobrem todos os custos. A partir daí, AdSense e novos anunciantes viram lucro.
 
 ## Personalizar

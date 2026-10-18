@@ -13,8 +13,14 @@ export const site = {
   emailComercial: "anuncie@smagora.com.br",
   instagram: "sm.agora",
   whatsappComercial: "5555991727990", // ex.: "5555999999999"
+  // Canal de WhatsApp (ex.: "https://whatsapp.com/channel/0029Va..."). Vazio = botões do canal escondidos.
+  whatsappCanal: process.env.NEXT_PUBLIC_WHATSAPP_CANAL || "",
+  // Logo quadrado usado nos dados estruturados do Google Notícias.
+  logo: "/logo.png",
   // Google AdSense: preencha quando a conta for aprovada (ex.: "ca-pub-1234567890").
   adsenseClient: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "",
+  // Google Analytics 4: ID de medição (ex.: "G-ABC123XYZ"). Vazio = sem medição.
+  googleAnalytics: process.env.NEXT_PUBLIC_GA_ID || "",
 };
 
 export type Categoria = {

@@ -14,7 +14,8 @@ export default function Privacidade() {
       <h2>Dados coletados</h2>
       <p>
         Não pedimos cadastro para ler o site. Podemos coletar dados de navegação de forma anônima (páginas visitadas,
-        tipo de dispositivo, cidade aproximada) por meio de ferramentas de estatística.
+        tipo de dispositivo, cidade aproximada) por meio de ferramentas de estatística, como o Google Analytics, que
+        usa cookies para contar visitas.
       </p>
       <h2>Publicidade e cookies</h2>
       <p>

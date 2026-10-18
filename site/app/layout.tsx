@@ -4,7 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Cabecalho } from "@/components/Cabecalho";
 import { Rodape } from "@/components/Rodape";
-import { site } from "@/lib/config";
+import { caminhoAsset, site } from "@/lib/config";
 
 // Títulos: grotesca expressiva. Texto corrido: serifada de leitura. Interface: sans neutra.
 const fonteUi = Public_Sans({ subsets: ["latin"], variable: "--fonte-ui" });
@@ -43,6 +43,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             strategy="afterInteractive"
           />
         )}
+        {site.googleAnalytics && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${site.googleAnalytics}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${site.googleAnalytics}');`}
+            </Script>
+          </>
+        )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "NewsMediaOrganization",
+              name: site.nome,
+              url: `${site.url}/`,
+              logo: new URL(caminhoAsset(site.logo), site.url).toString(),
+              email: site.email,
+              sameAs: [`https://instagram.com/${site.instagram}`, ...(site.whatsappCanal ? [site.whatsappCanal] : [])],
+              areaServed: `${site.cidade} - ${site.estado}`,
+            }),
+          }}
+        />
         <Cabecalho />
         <main className="flex-1">{children}</main>
         <Rodape />
