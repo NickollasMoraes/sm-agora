@@ -1,0 +1,29 @@
+{
+  "name": "agente-sm-agora",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agente que busca notícias de Santa Maria, pede aprovação no Telegram e publica no site e no Instagram.",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "testar-fontes": "tsx src/testar-fontes.ts",
+    "coletar-agora": "tsx src/index.ts --coletar-agora",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "cheerio": "^1.2.0",
+    "dotenv": "^18.0.8",
+    "grammy": "^1.46.0",
+    "node-cron": "^4.6.0",
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+.next/
+site/out/
+agente/.env
+agente/data/
+*.log
+.claude/
+arte-exemplo-instagram.jpg

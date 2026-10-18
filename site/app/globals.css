@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* Layout: portal em grade de 12 colunas, manchete à esquerda e trilho de "últimas" à direita.
+   Paleta: azul-ardósia frio (neutros com viés azul) + vermelho-tijolo da Gare da Viação Férrea como acento. */
+:root {
+  --fundo: #fbfcfd;
+  --fundo-suave: #eef1f5;
+  --texto: #121821;
+  --texto-suave: #556070;
+  --borda: #dde2ea;
+  --marca: #b3261e;
+  --marca-escura: #8c1d17;
+  --tinta: #1d2b3a; /* faixas escuras (topo, rodapé) */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0d1117;
+    --fundo-suave: #161c25;
+    --texto: #e7ebf1;
+    --texto-suave: #98a3b3;
+    --borda: #262f3b;
+    --marca: #f0645a;
+    --marca-escura: #d84a40;
+    --tinta: #070a0e;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-fundo-suave: var(--fundo-suave);
+  --color-texto: var(--texto);
+  --color-texto-suave: var(--texto-suave);
+  --color-borda: var(--borda);
+  --color-marca: var(--marca);
+  --color-marca-escura: var(--marca-escura);
+  --color-tinta: var(--tinta);
+  --font-sans: var(--fonte-ui);
+  --font-serif: var(--fonte-titulo);
+  --font-texto: var(--fonte-texto);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--fonte-ui), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Corpo da matéria */
+.materia {
+  font-family: var(--fonte-texto), Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 1.75;
+  max-width: 65ch;
+}
+.materia p {
+  margin: 0 0 1.25em;
+}
+.materia > p:first-child::first-letter {
+  float: left;
+  font-family: var(--fonte-titulo), sans-serif;
+  font-weight: 800;
+  font-size: 3.6em;
+  line-height: 0.85;
+  margin: 0.06em 0.1em 0 0;
+  color: var(--marca);
+}
+.materia h2 {
+  font-family: var(--fonte-titulo), sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.8em 0 0.6em;
+}
+.materia h3 {
+  font-family: var(--fonte-titulo), sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+}
+.materia a {
+  color: var(--marca);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.materia ul,
+.materia ol {
+  margin: 0 0 1.25em 1.25em;
+}
+.materia ul {
+  list-style: disc;
+}
+.materia ol {
+  list-style: decimal;
+}
+.materia li {
+  margin-bottom: 0.4em;
+}
+.materia blockquote {
+  border-left: 3px solid var(--marca);
+  padding: 0.25em 0 0.25em 1em;
+  margin: 1.5em 0;
+  color: var(--texto-suave);
+  font-style: italic;
+}
+.materia strong {
+  font-weight: 700;
+}
