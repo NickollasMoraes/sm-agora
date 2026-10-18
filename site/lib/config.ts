@@ -12,7 +12,7 @@ export const site = {
   email: "contato@smagora.com.br",
   emailComercial: "anuncie@smagora.com.br",
   instagram: "sm.agora",
-  whatsappComercial: "", // ex.: "5555999999999"
+  whatsappComercial: "5555991727990", // ex.: "5555999999999"
   // Google AdSense: preencha quando a conta for aprovada (ex.: "ca-pub-1234567890").
   adsenseClient: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "",
 };
