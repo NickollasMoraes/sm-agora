@@ -6,7 +6,7 @@ export const site = {
   descricao:
     "Portal de notícias de Santa Maria (RS): cidade, segurança, educação, UFSM, esporte, cultura e economia.",
   // Domínio final (sem barra no fim). Usado em SEO, sitemap e RSS.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://smagora.com.br",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://smagora.com.br",
   cidade: "Santa Maria",
   estado: "RS",
   email: "contato@smagora.com.br",
@@ -14,7 +14,7 @@ export const site = {
   instagram: "smagora",
   whatsappComercial: "", // ex.: "5555999999999"
   // Google AdSense: preencha quando a conta for aprovada (ex.: "ca-pub-1234567890").
-  adsenseClient: process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "",
+  adsenseClient: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "",
 };
 
 export type Categoria = {
@@ -40,7 +40,7 @@ export function categoriaPorSlug(slug: string): Categoria {
 }
 
 // Prefixo de caminho quando o site roda em usuario.github.io/repositorio (sem domínio próprio).
-export const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export function caminhoAsset(src: string): string {
   if (/^https?:\/\//.test(src)) return src;
