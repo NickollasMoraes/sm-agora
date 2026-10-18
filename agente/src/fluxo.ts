@@ -189,7 +189,9 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
     `✅ Publicado: ${pub.url}\n${pub.enviadoAoGitHub ? "O site atualiza em 1 a 3 minutos." : `⚠️ ${pub.aviso}`}`,
   );
 
-  const legenda = `${r.rascunho!.legendaInstagram}\n\n🔗 Link na bio · @${config.instagramArroba}`;
+  // A IA já costuma chamar para o link da bio; só acrescenta quando ela não chamou.
+  const textoIg = r.rascunho!.legendaInstagram;
+  const legenda = /bio/i.test(textoIg) ? textoIg : `${textoIg}\n\n🔗 Matéria completa no link da bio`;
   if (instagramConfigurado() && pub.enviadoAoGitHub) {
     try {
       await postarNoInstagram(urlArte(pub.slug), legenda);
