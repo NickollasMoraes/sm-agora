@@ -117,18 +117,17 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
 
   const candidatas = await buscarCandidatas(rascunho.buscaImagem);
   const imagem = candidatas[tentativa];
-  let foto: Buffer;
+  let fotoReal: Buffer | null = null;
   if (imagem) {
     try {
-      foto = await fotoDoSite(await baixarImagem(imagem.url));
+      fotoReal = await fotoDoSite(await baixarImagem(imagem.url));
     } catch {
-      foto = await fundoSemFoto(rascunho.categoria);
+      fotoReal = null;
     }
-  } else {
-    foto = await fundoSemFoto(rascunho.categoria);
   }
-  const credito = imagem ? `${imagem.autor} / ${imagem.acervo}` : undefined;
-  const arte = await arteInstagram(foto, rascunho.tituloArte, rascunho.categoria, credito);
+  const foto = fotoReal ?? (await fundoSemFoto(rascunho.categoria));
+  const credito = fotoReal && imagem ? `${imagem.autor} / ${imagem.acervo}` : undefined;
+  const arte = await arteInstagram(fotoReal, rascunho.tituloArte, rascunho.categoria, credito);
 
   fs.mkdirSync(pastaPrevias, { recursive: true });
   fs.writeFileSync(arquivoPrevia(id, "foto"), foto);
