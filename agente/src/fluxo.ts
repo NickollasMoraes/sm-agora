@@ -132,9 +132,10 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   fs.mkdirSync(pastaPrevias, { recursive: true });
   fs.writeFileSync(arquivoPrevia(id, "foto"), foto);
   fs.writeFileSync(arquivoPrevia(id, "arte"), arte);
-  db.atualizar(id, { status: "previa", imagem });
+  // Se a foto não baixou, a prévia usa o fundo da marca: sem crédito de foto na matéria.
+  db.atualizar(id, { status: "previa", imagem: fotoReal ? imagem : undefined });
 
-  const infoImagem = imagem
+  const infoImagem = fotoReal && imagem
     ? `🖼 Imagem: ${h(imagem.autor)} (${h(imagem.licenca)}, <a href="${imagem.fonte}">${imagem.acervo}</a>)`
     : "🖼 Sem foto livre adequada: usando fundo da editoria.";
   const legenda =

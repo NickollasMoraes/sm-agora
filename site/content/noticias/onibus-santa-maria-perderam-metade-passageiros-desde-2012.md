@@ -5,7 +5,7 @@ categoria: cidade
 tags: ["transporte-coletivo","onibus","tarifa","atu","subsidio","mobilidade-urbana"]
 data: 2026-10-18T11:33:37.063Z
 imagem: "/imagens/noticias/onibus-santa-maria-perderam-metade-passageiros-desde-2012.jpg"
-imagemAlt: "Ônibus do transporte coletivo urbano circulando por uma rua da cidade, com passageiros aguardando na parada"
+imagemAlt: "SM Agora"
 fontes: [{"nome":"Diário de Santa Maria – Após último aumento da tarifa, 7,4% deixaram de andar de ônibus em Santa Maria (coluna Deni Zolin)","url":"https://diariosm.com.br/colunistas/colunistas_do_site/deni_zolin/apos-ultimo-aumento-da-tarifa-7-4-deixaram-de-andar-de-onibus-em-santa-maria.15440904"},{"nome":"Diário de Santa Maria – Transporte coletivo de Santa Maria vive 'situação delicada', diz presidente da ATU","url":"https://diariosm.com.br/noticias/geral/transporte-coletivo-de-santa-maria-vive-situacao-delicada-diz-presidente-da-atu.15438392"}]
 ---
 

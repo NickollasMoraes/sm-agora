@@ -5,8 +5,7 @@ categoria: educacao
 tags: ["matriculas-2027","santiago","rede-municipal","educacao-infantil","ensino-fundamental","regiao-central"]
 data: 2026-10-18T11:39:48.366Z
 imagem: "/imagens/noticias/santiago-inscricoes-novos-alunos-rede-municipal-2027.jpg"
-imagemAlt: "Sala de aula de escola pública com carteiras e quadro, aguardando a chegada dos alunos"
-credito: {"autor":"Gobierno de Chile / Wikimedia Commons","licenca":"CC BY 3.0 cl","fonte":"https://commons.wikimedia.org/wiki/File:Gob_2022-2026_Material_Gr%C3%A1fico_Educaci%C3%B3n_escolar_Mochila.png"}
+imagemAlt: "SM Agora"
 fontes: [{"nome":"NP Expresso – Rede municipal abre inscrições de novos alunos para 2027","url":"https://npexpresso.com.br/educacao/rede-municipal-abre-inscricoes-de-novos-alunos-para-2027"},{"nome":"Rádio Santiago FM – Inscrições para matrículas rede municipal seguem até o dia 30 de outubro","url":"https://radiosantiago.com.br/educacao/inscricoes-para-matriculas-rede-municipal-seguem-ate-o-dia-30-de-outubro/"},{"nome":"Prefeitura de Santa Maria","url":"https://www.santamaria.rs.gov.br/"}]
 ---
 

@@ -5,8 +5,7 @@ categoria: seguranca
 tags: ["sao-sepe","policia-civil","tentativa-de-homicidio","mandado-de-prisao","regiao-central"]
 data: 2026-10-18T11:45:20.199Z
 imagem: "/imagens/noticias/sao-sepe-homem-preso-condenado-tentativa-homicidio-2007.jpg"
-imagemAlt: "Viatura da Polícia Civil estacionada em frente a uma delegacia"
-credito: {"autor":"Rodrigo / Wikimedia Commons","licenca":"Public domain","fonte":"https://commons.wikimedia.org/wiki/File:Rio_S%C3%A3o_Sep%C3%A9,_January_2008.jpg"}
+imagemAlt: "SM Agora"
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/policia-seguranca/homem-e-preso-em-sao-sepe-por-tentativa-de-homicidio-cometida-em-2007.30899080"},{"nome":"Jornal O Sepeense","url":"https://osepeense.com/policia-civil-prende-homem-condenado-por-homicidio-tentado-em-sao-sepe/"}]
 ---
 

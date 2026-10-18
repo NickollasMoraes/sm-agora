@@ -48,7 +48,7 @@ export async function publicar(
     `tags: ${y(r.tags)}`,
     `data: ${new Date().toISOString()}`,
     `imagem: ${y(`/imagens/noticias/${slug}.jpg`)}`,
-    `imagemAlt: ${y(r.descricaoImagem)}`,
+    `imagemAlt: ${y(imagem ? r.descricaoImagem : config.siteNome)}`,
     imagem
       ? `credito: ${y({ autor: `${imagem.autor} / ${imagem.acervo}`, licenca: imagem.licenca, fonte: imagem.fonte })}`
       : "",

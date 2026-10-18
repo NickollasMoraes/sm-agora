@@ -91,15 +91,14 @@ function rodape(L: number, A: number, credito?: string): string {
   <rect y="${A - 14}" width="${L}" height="14" fill="${MARCA}"/>`;
 }
 
-// Fundo sem foto (site): azul-marinho da marca com faixa na cor da editoria e o "SM." apagado ao fundo.
+// Fundo sem foto (site): azul-marinho da marca, selo no centro e faixa embaixo na cor da editoria.
 export async function fundoSemFoto(categoria: string): Promise<Buffer> {
   const cor = coresCategoria[categoria] ?? MARCA;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900">
-  <defs><radialGradient id="g" cx="0.3" cy="0.3" r="1"><stop offset="0" stop-color="${TINTA_CLARA}"/><stop offset="1" stop-color="${TINTA}"/></radialGradient></defs>
+  <defs><radialGradient id="g" cx="0.5" cy="0.45" r="0.8"><stop offset="0" stop-color="${TINTA_CLARA}"/><stop offset="1" stop-color="${TINTA}"/></radialGradient></defs>
   <rect width="1600" height="900" fill="url(#g)"/>
-  <text x="1660" y="1010" text-anchor="end" font-family="${FONTE_FORTE}" font-weight="900" font-size="900" fill="#fff" fill-opacity="0.05" letter-spacing="-30">SM.</text>
-  <rect width="24" height="900" fill="${cor}"/>
-  ${selo(110, 330, 2.2)}
+  <rect y="876" width="1600" height="24" fill="${cor}"/>
+  ${selo(800 - 72 * 2.6, 450 - 52 * 2.6, 2.6)}
 </svg>`;
   return sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer();
 }
