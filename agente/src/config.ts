@@ -50,6 +50,7 @@ export const config = {
     noticias: path.resolve(aqui, "..", "..", "site", "content", "noticias"),
     imagens: path.resolve(aqui, "..", "..", "site", "public", "imagens", "noticias"),
     artes: path.resolve(aqui, "..", "..", "site", "public", "imagens", "instagram"),
+    capasReels: path.resolve(aqui, "..", "..", "site", "public", "imagens", "reels"),
   },
 };
 

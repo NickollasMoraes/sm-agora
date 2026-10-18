@@ -63,13 +63,18 @@ export async function publicar(
   if (!config.gitPush) return { slug, url, enviadoAoGitHub: false, aviso: "GIT_PUSH=false: arquivos salvos só no PC." };
 
   try {
-    const git = (...args: string[]) => exec("git", args, { cwd: config.pastas.raiz });
-    await git("add", "site/content/noticias", "site/public/imagens");
-    await git("commit", "-m", `Notícia: ${r.titulo}`);
-    await git("pull", "--rebase", "--autostash");
-    await git("push");
+    await enviarAoGitHub(["site/content/noticias", "site/public/imagens"], `Notícia: ${r.titulo}`);
     return { slug, url, enviadoAoGitHub: true };
   } catch (e) {
     return { slug, url, enviadoAoGitHub: false, aviso: `Falha no git: ${(e as Error).message.slice(0, 300)}` };
   }
+}
+
+// Commit + push de arquivos do site (caminhos relativos à raiz do projeto). O GitHub Pages publica em 1 a 3 min.
+export async function enviarAoGitHub(caminhos: string[], mensagem: string): Promise<void> {
+  const git = (...args: string[]) => exec("git", args, { cwd: config.pastas.raiz });
+  await git("add", ...caminhos);
+  await git("commit", "-m", mensagem);
+  await git("pull", "--rebase", "--autostash");
+  await git("push");
 }

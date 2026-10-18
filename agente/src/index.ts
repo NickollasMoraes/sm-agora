@@ -5,6 +5,7 @@ import { claudeCodeLogado } from "./claude-code.js";
 import { instagramConfigurado, renovarToken } from "./instagram.js";
 import * as db from "./estado.js";
 import { ajustarTexto, aprovar, montarPrevia, publicarItem, reenviarPautas, rodarColeta, trocarImagem } from "./fluxo.js";
+import { botaoReel, receberVideo, reelPorMensagem, responderReel } from "./reels.js";
 
 const bot = new Bot(config.telegramToken);
 
@@ -31,7 +32,7 @@ function tarefa(nome: string, fn: () => Promise<void>) {
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "Agente do portal ativo.\n\n/pautas: ver as pautas aguardando decisão\n/coletar: buscar pautas agora\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas",
+    "Agente do portal ativo.\n\n/pautas: ver as pautas aguardando decisão\n/coletar: buscar pautas agora\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas\n\n🎬 Reels: mande um vídeo. Na legenda, a 1ª linha vira o título da capa e o resto vira a legenda do post.",
   ),
 );
 
@@ -58,6 +59,12 @@ bot.command("pendentes", async (ctx) => {
 // Botões
 bot.on("callback_query:data", async (ctx) => {
   const [acao, id] = ctx.callbackQuery.data.split(":");
+  if (acao.startsWith("rl")) {
+    const texto = await botaoReel(bot, acao, id);
+    await ctx.answerCallbackQuery(texto ? { text: texto } : undefined);
+    if (acao !== "rlt") await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {});
+    return;
+  }
   const r = db.obter(id);
   if (!r) return ctx.answerCallbackQuery({ text: "Item não encontrado (talvez muito antigo)." });
 
@@ -106,6 +113,8 @@ bot.on("callback_query:data", async (ctx) => {
 bot.on("message:text", async (ctx) => {
   const respondida = ctx.message.reply_to_message?.message_id;
   if (!respondida) return;
+  const reel = reelPorMensagem(respondida);
+  if (reel) return tarefa("reels", () => responderReel(bot, reel, ctx.message.text));
   const r = db.porMensagem(respondida);
   if (!r) return;
   if (r.status === "pauta") {
@@ -114,6 +123,13 @@ bot.on("message:text", async (ctx) => {
   } else if (r.status === "previa") {
     tarefa("ajuste", () => ajustarTexto(bot, r.id, ctx.message.text));
   }
+});
+
+// Vídeo (ou arquivo de vídeo) enviado no chat: vira prévia de Reels
+bot.on(["message:video", "message:document"], async (ctx) => {
+  const arquivo = ctx.message.video ?? ctx.message.document;
+  if (!arquivo || (ctx.message.document && !ctx.message.document.mime_type?.startsWith("video/"))) return;
+  tarefa("reels", () => receberVideo(bot, arquivo, ctx.message.caption ?? ""));
 });
 
 bot.catch((e) => console.error("[bot]", e.message));

@@ -84,7 +84,7 @@ cd agente && npm install && npm start
 3. No Telegram, mande `/start` para o seu bot. Ele responde com o seu `TELEGRAM_CHAT_ID`; cole no `.env` e reinicie (Ctrl+C e `npm start`). Por segurança, o bot só obedece a esse chat.
 4. Mande `/coletar` para buscar pautas na hora.
 
-**Comandos do bot:** `/coletar` (buscar agora), `/status` (resumo), `/pendentes` (reenviar prévias não publicadas).
+**Comandos do bot:** `/pautas` (pautas aguardando decisão), `/coletar` (buscar agora), `/status` (resumo), `/pendentes` (reenviar prévias não publicadas).
 
 ### Deixar rodando sozinho no Windows
 
@@ -102,6 +102,16 @@ O agente posta sozinho a cada matéria publicada, usando a API oficial (Login do
 - **Token:** vale 60 dias, e o agente o renova sozinho toda segunda às 4h. Se o PC ficar desligado por mais de 60 dias seguidos, gere outro token no app (Casos de uso > API do Instagram > Gerar tokens de acesso > Gerar token) e cole no `.env`.
 - **Se a postagem falhar**, o bot avisa no Telegram e manda a arte + legenda pra você postar manualmente.
 - Para voltar ao modo manual, apague o `INSTAGRAM_ACCESS_TOKEN` do `.env`.
+
+### Reels a partir de um vídeo seu
+
+1. Mande o vídeo para o bot no Telegram. Na legenda do vídeo, a **1ª linha** vira o título da capa e o resto (opcional) vira a legenda do post. Sem legenda, o bot pergunta o título.
+2. O bot devolve a capa no padrão do portal com **[Publicar Reels] [Trocar título] [Descartar]**.
+3. Ao publicar, vídeo e capa passam pelo site (a API do Instagram só aceita arquivos por link público), o Reels vai ao ar e o vídeo é apagado do site em seguida. Leva de 3 a 6 minutos.
+
+- **Limite de 20 MB:** é o máximo que o Telegram deixa um bot baixar. Mande como vídeo normal (não como arquivo) que o Telegram comprime; vídeos de até 1 a 2 minutos costumam caber.
+- O Instagram aceita Reels de 3 segundos a 15 minutos, de preferência na vertical (9:16).
+- Cada vídeo passa pelo histórico do git. Se o repositório ficar pesado com o tempo (o GitHub recomenda até 1 GB), dá para migrar os vídeos para outro serviço.
 
 ---
 

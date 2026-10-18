@@ -62,6 +62,39 @@ async function chamar(caminho: string, params: Record<string, string>) {
   return dados.id;
 }
 
+// Espera o Instagram terminar de processar a mídia (vídeo pode levar alguns minutos).
+async function esperarProcessamento(container: string, minutos: number): Promise<void> {
+  const fim = Date.now() + minutos * 60_000;
+  while (Date.now() < fim) {
+    const r = await fetch(`${API}/${container}?fields=status_code,status&access_token=${config.igToken}`);
+    const { status_code, status } = (await r.json()) as { status_code?: string; status?: string };
+    if (status_code === "FINISHED") return;
+    if (status_code === "ERROR") throw new Error(`Instagram recusou a mídia${status ? ` (${status})` : ""}.`);
+    await esperar(5000);
+  }
+  throw new Error(`O Instagram não terminou de processar em ${minutos} min.`);
+}
+
+// Reels: com o Login do Instagram a API não aceita upload direto (exige video_url), então vídeo e
+// capa precisam estar em URL pública. Devolve o link do post.
+export async function postarReels(urlVideo: string, urlCapa: string, legenda: string): Promise<string> {
+  await esperarUrlNoAr(urlCapa);
+  await esperarUrlNoAr(urlVideo);
+  const container = await chamar(`${await contaId()}/media`, {
+    media_type: "REELS",
+    video_url: urlVideo,
+    cover_url: urlCapa,
+    caption: legenda,
+    share_to_feed: "true",
+  });
+  await esperarProcessamento(container, 15);
+  const id = await chamar(`${await contaId()}/media_publish`, { creation_id: container });
+  const link = await fetch(`${API}/${id}?fields=permalink&access_token=${config.igToken}`)
+    .then((x) => x.json() as Promise<{ permalink?: string }>)
+    .catch(() => ({ permalink: undefined }));
+  return link.permalink ?? `https://instagram.com/${config.instagramArroba}`;
+}
+
 export async function postarNoInstagram(urlImagem: string, legenda: string): Promise<string> {
   await esperarUrlNoAr(urlImagem);
   const container = await chamar(`${await contaId()}/media`, { image_url: urlImagem, caption: legenda });

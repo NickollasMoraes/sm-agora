@@ -158,4 +158,28 @@ export async function arteInstagram(foto: Buffer | null, titulo: string, categor
     .toBuffer();
 }
 
-export const urlArte = (slug: string) => `${config.siteUrl}/imagens/instagram/${slug}.jpg`;
+// Capa de Reels: 1080x1920. A grade do perfil mostra só o centro (3:4, de y=240 a 1680), então
+// selo, etiqueta e manchete ficam nessa faixa.
+export async function capaReels(titulo: string): Promise<Buffer> {
+  const L = 1080;
+  const A = 1920;
+  const { linhas, tamanho } = ajustarManchete(titulo, L - 128, 6, 116, 72);
+  const alturaTexto = tamanho * 1.12 * linhas.length;
+  const topo = Math.max(720, 960 - alturaTexto / 2);
+  const data = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${A}">
+  <defs><radialGradient id="g" cx="0.3" cy="0.35" r="0.9"><stop offset="0" stop-color="${TINTA_CLARA}"/><stop offset="1" stop-color="${TINTA}"/></radialGradient></defs>
+  <rect width="${L}" height="${A}" fill="url(#g)"/>
+  <rect width="16" height="${A}" fill="${MARCA}"/>
+  ${selo(64, 300)}
+  <rect x="64" y="${topo - 90}" width="236" height="56" rx="6" fill="${PONTO}"/>
+  <path d="M88 ${topo - 74} L108 ${topo - 62} L88 ${topo - 50} Z" fill="#fff"/>
+  <text x="122" y="${topo - 50}" font-family="${FONTE}" font-weight="800" font-size="30" letter-spacing="3" fill="#fff">VÍDEO</text>
+  ${manchete(64, topo, linhas, tamanho)}
+  <text x="64" y="${Math.min(1640, topo + alturaTexto + 110)}" font-family="${FONTE}" font-weight="700" font-size="34" fill="#fff" fill-opacity="0.85">${esc(`Santa Maria · ${data}`)}</text>
+  <rect y="${A - 14}" width="${L}" height="14" fill="${MARCA}"/>
+</svg>`;
+  return sharp(Buffer.from(svg)).jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+}
+
+export const urlArte =(slug: string) => `${config.siteUrl}/imagens/instagram/${slug}.jpg`;
