@@ -4,7 +4,7 @@ import { config } from "./config.js";
 import { claudeCodeLogado } from "./claude-code.js";
 import { instagramConfigurado, renovarToken } from "./instagram.js";
 import * as db from "./estado.js";
-import { ajustarTexto, aprovar, montarPrevia, publicarItem, rodarColeta, trocarImagem } from "./fluxo.js";
+import { ajustarTexto, aprovar, montarPrevia, publicarItem, reenviarPautas, rodarColeta, trocarImagem } from "./fluxo.js";
 
 const bot = new Bot(config.telegramToken);
 
@@ -31,9 +31,11 @@ function tarefa(nome: string, fn: () => Promise<void>) {
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "Agente do portal ativo.\n\n/coletar: buscar pautas agora\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas",
+    "Agente do portal ativo.\n\n/pautas: ver as pautas aguardando decisão\n/coletar: buscar pautas agora\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas",
   ),
 );
+
+bot.command("pautas", async () => tarefa("pautas", () => reenviarPautas(bot)));
 
 bot.command("coletar", async (ctx) => {
   await ctx.reply("🔎 Buscando pautas…");
@@ -130,5 +132,15 @@ if (config.iaProvedor === "claude-code" && !(await claudeCodeLogado())) {
 }
 if (!config.telegramChatId) console.log("Mande /start para o seu bot no Telegram para descobrir o TELEGRAM_CHAT_ID.");
 if (process.argv.includes("--coletar-agora")) tarefa("coleta", () => rodarColeta(bot, true));
+
+// Menu de comandos que aparece ao digitar "/" no Telegram
+await bot.api
+  .setMyCommands([
+    { command: "pautas", description: "Ver as pautas aguardando decisão" },
+    { command: "coletar", description: "Buscar pautas agora" },
+    { command: "status", description: "Resumo do dia" },
+    { command: "pendentes", description: "Reenviar prévias não publicadas" },
+  ])
+  .catch(() => {});
 
 await bot.start({ drop_pending_updates: false });

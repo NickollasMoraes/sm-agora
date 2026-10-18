@@ -2,10 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { config, nomesCategorias } from "./config.js";
-import { coletarTudo } from "./coletor.js";
+import { coletarTudo, type ItemColetado } from "./coletor.js";
 import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
-import { ajustar, pesquisarFatos, redigir, triar } from "./ia.js";
+import { ajustar, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
 import { baixarImagem, buscarCandidatas } from "./imagens.js";
 import { arteInstagram, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
 import { publicar } from "./publicar.js";
@@ -44,17 +44,8 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
     }
 
     for (const { item, t } of aprovadas) {
-      const texto =
-        `📰 <b>${h(item.titulo)}</b>\n\n${h(t!.resumo)}\n\n` +
-        `🏷 ${nomesCategorias[t!.categoria]} · nota ${t!.nota}/10\n🔗 <a href="${item.link}">${h(item.fonte)}</a>\n\n` +
-        `<i>Dica: responda esta mensagem com uma orientação para aprovar com ela.</i>`;
-      const teclado = new InlineKeyboard().text("✅ Aprovar", `ap:${item.id}`).text("❌ Descartar", `rj:${item.id}`);
-      const msg = await bot.api.sendMessage(config.telegramChatId, texto, {
-        parse_mode: "HTML",
-        reply_markup: teclado,
-        link_preview_options: { is_disabled: true },
-      });
-      db.registrar(item, "pauta", { triagem: t, mensagens: [msg.message_id] });
+      const msgId = await enviarPauta(bot, item, t!);
+      db.registrar(item, "pauta", { triagem: t, mensagens: [msgId] });
     }
 
     if (aprovadas.length === 0 && avisarSeVazio) {
@@ -62,6 +53,37 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
     }
   } finally {
     coletando = false;
+  }
+}
+
+async function enviarPauta(bot: Bot, item: ItemColetado, t: Triagem): Promise<number> {
+  const texto =
+    `📰 <b>${h(item.titulo)}</b>\n\n${h(t.resumo)}\n\n` +
+    `🏷 ${nomesCategorias[t.categoria]} · nota ${t.nota}/10\n🔗 <a href="${item.link}">${h(item.fonte)}</a>\n\n` +
+    `<i>Dica: responda esta mensagem com uma orientação para aprovar com ela.</i>`;
+  const teclado = new InlineKeyboard().text("✅ Aprovar", `ap:${item.id}`).text("❌ Descartar", `rj:${item.id}`);
+  const msg = await bot.api.sendMessage(config.telegramChatId, texto, {
+    parse_mode: "HTML",
+    reply_markup: teclado,
+    link_preview_options: { is_disabled: true },
+  });
+  return msg.message_id;
+}
+
+// Reenvia as pautas que ainda aguardam decisão (comando /pautas), da maior nota para a menor
+export async function reenviarPautas(bot: Bot): Promise<void> {
+  const pendentes = db
+    .porStatus("pauta")
+    .filter((r) => r.triagem)
+    .sort((a, b) => b.triagem!.nota - a.triagem!.nota);
+  if (pendentes.length === 0) {
+    await bot.api.sendMessage(config.telegramChatId, "Nenhuma pauta aguardando decisão.");
+    return;
+  }
+  await bot.api.sendMessage(config.telegramChatId, `📋 ${pendentes.length} pauta(s) aguardando decisão:`);
+  for (const r of pendentes) {
+    const msgId = await enviarPauta(bot, r, r.triagem!);
+    db.atualizar(r.id, { mensagens: [...r.mensagens, msgId] });
   }
 }
 

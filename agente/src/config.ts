@@ -31,7 +31,8 @@ export const config = {
   notaMinima: Number(process.env.NOTA_MINIMA || 7),
   maxPautasPorRodada: Number(process.env.MAX_PAUTAS_POR_RODADA ?? 8),
 
-  // Imagens (opcional: sem chave, usa só Wikimedia Commons)
+  // Imagens (opcional: sem chave, usa Wikimedia Commons e Openverse)
+  pixabayKey: process.env.PIXABAY_API_KEY ?? "",
   pexelsKey: process.env.PEXELS_API_KEY ?? "",
 
   // Instagram (opcional: sem isso, o bot manda a arte pronta para você postar)
