@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Anuncio } from "@/components/Anuncio";
 import { CardNoticia } from "@/components/CardNoticia";
+import { TempoCard } from "@/components/Tempo";
 import { categorias } from "@/lib/config";
 import { todasNoticias } from "@/lib/noticias";
 
@@ -17,8 +18,9 @@ export default function Inicio() {
 
   const principal = noticias.find((n) => n.destaque) ?? noticias[0];
   const resto = noticias.filter((n) => n.slug !== principal.slug);
-  const secundarias = resto.slice(0, 4);
-  const maisLidas = resto.slice(4, 9);
+  // 1 notícia ao lado da manchete (abaixo do tempo) + 2 na grade do meio
+  const secundarias = resto.slice(0, 3);
+  const maisLidas = resto.slice(3, 8);
   const usadas = new Set([principal.slug, ...secundarias.map((n) => n.slug)]);
 
   const porCategoria = categorias
@@ -32,7 +34,8 @@ export default function Inicio() {
           <CardNoticia noticia={principal} variante="grande" />
         </div>
         <div className="space-y-6">
-          {secundarias.slice(0, 2).map((n) => (
+          <TempoCard />
+          {secundarias.slice(0, 1).map((n) => (
             <CardNoticia key={n.slug} noticia={n} />
           ))}
         </div>
@@ -42,7 +45,7 @@ export default function Inicio() {
 
       <section className="grid gap-8 lg:grid-cols-3">
         <div className="grid gap-8 sm:grid-cols-2 lg:col-span-2">
-          {secundarias.slice(2).map((n) => (
+          {secundarias.slice(1).map((n) => (
             <CardNoticia key={n.slug} noticia={n} />
           ))}
         </div>

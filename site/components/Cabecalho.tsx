@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { categorias, site } from "@/lib/config";
+import { TempoTopo } from "@/components/Tempo";
 
 function dataDeHoje() {
   return new Date().toLocaleDateString("pt-BR", {
@@ -20,9 +21,12 @@ export function Cabecalho() {
           <span className="hidden sm:inline">
             Santa Maria, coração do Rio Grande
           </span>
-          <a href={`https://instagram.com/${site.instagram}`} className="hover:text-white">
-            @{site.instagram}
-          </a>
+          <span className="flex items-center gap-4">
+            <TempoTopo />
+            <a href={`https://instagram.com/${site.instagram}`} className="hidden hover:text-white sm:inline">
+              @{site.instagram}
+            </a>
+          </span>
         </div>
       </div>
       <header className="sticky top-0 z-30 border-b border-borda bg-fundo/95 backdrop-blur">
