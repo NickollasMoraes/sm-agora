@@ -144,15 +144,20 @@ async function pexels(busca: string): Promise<ImagemEscolhida[]> {
 }
 
 // Devolve candidatas na ordem de preferência: Commons (mais específico, ex.: lugares de Santa Maria),
-// depois Pixabay, Pexels e Openverse.
+// depois Pixabay, Pexels e Openverse. Busca de lugar da cidade ("Santa Maria ... catedral") vai só ao
+// Commons: nos bancos genéricos ela traz Santa Maria del Fiore, em Florença.
+const LUGAR_LOCAL = /santa maria/i;
+const nenhuma = async (): Promise<ImagemEscolhida[]> => [];
+
 export async function buscarCandidatas(buscas: string[]): Promise<ImagemEscolhida[]> {
   const todas: ImagemEscolhida[] = [];
   for (const b of buscas) {
+    const generica = !LUGAR_LOCAL.test(b);
     const [w, px, p, o] = await Promise.all([
       wikimedia(b).catch(() => []),
-      pixabay(b).catch(() => []),
-      pexels(b).catch(() => []),
-      openverse(b).catch(() => []),
+      generica ? pixabay(b).catch(() => []) : nenhuma(),
+      generica ? pexels(b).catch(() => []) : nenhuma(),
+      generica ? openverse(b).catch(() => []) : nenhuma(),
     ]);
     todas.push(...w, ...px, ...p, ...o);
   }

@@ -12,7 +12,7 @@ Triagem grátis por palavras-chave (nota de 1 a 10, remove repetidas e outras "S
    ▼
 📱 Telegram: pauta com [Aprovar] [Descartar]   (ou responda com uma orientação)
    ▼ aprovou
-IA escreve a matéria original + busca foto livre (Wikimedia Commons / Pexels) + gera arte
+IA escreve a matéria original + busca foto livre (Wikimedia Commons / Openverse / Pixabay) + gera arte
    ▼
 📱 Telegram: prévia com [Publicar] [Outra imagem] [Ajustar texto] [Descartar]
    ▼ publicou
@@ -108,7 +108,7 @@ O agente posta sozinho a cada matéria publicada, usando a API oficial (Login do
 ## Direitos autorais: o que o agente faz por você
 
 - **Texto:** a IA reescreve do zero, atribui a informação no texto ("segundo a Prefeitura") e lista as fontes com link no fim da matéria. Citações literais só curtas e entre aspas.
-- **Fotos:** o agente **nunca usa a foto da notícia original**. Busca apenas no Wikimedia Commons (licenças CC0, domínio público, CC BY e CC BY-SA, e descarta NC/ND, que proíbem uso comercial) e no Pexels. Autor, licença e link de origem aparecem embaixo da foto.
+- **Fotos:** o agente **nunca usa a foto da notícia original**. Busca apenas no Wikimedia Commons (licenças CC0, domínio público, CC BY e CC BY-SA, e descarta NC/ND, que proíbem uso comercial), no Openverse (mesmas regras de licença, sem chave) e no Pixabay. Para ligar o Pixabay, crie uma conta grátis, copie a chave em pixabay.com/api/docs e cole em `PIXABAY_API_KEY` no `agente/.env`. Autor, licença e link de origem aparecem embaixo da foto.
 - **Pessoas:** a busca de imagens descreve lugares e cenas, nunca nomes de pessoas. Em casos policiais, a IA não expõe nomes de suspeitos não acusados, vítimas ou menores.
 - **Você é o editor:** nada vai ao ar sem o seu "Publicar". Confira a foto na prévia; se não gostar, toque em **Outra imagem**.
 - Fotos próprias são sempre as melhores. Tirou uma foto da cidade? Ela vale mais que qualquer banco de imagens.
