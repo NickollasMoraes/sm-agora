@@ -9,8 +9,8 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://smagora.com.br",
   cidade: "Santa Maria",
   estado: "RS",
-  email: "contato@smagora.com.br",
-  emailComercial: "anuncie@smagora.com.br",
+  email: "nickollasblog@gmail.com",
+  emailComercial: "nickollasblog@gmail.com",
   instagram: "sm.agora",
   whatsappComercial: "5555991727990", // ex.: "5555999999999"
   // Canal de WhatsApp (ex.: "https://whatsapp.com/channel/0029Va..."). Vazio = botões do canal escondidos.
