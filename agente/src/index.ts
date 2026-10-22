@@ -6,6 +6,7 @@ import { instagramConfigurado, renovarToken } from "./instagram.js";
 import * as db from "./estado.js";
 import { ajustarTexto, aprovar, montarPrevia, publicarItem, reenviarPautas, rodarColeta, trocarImagem } from "./fluxo.js";
 import { botaoReel, receberVideo, reelPorMensagem, responderReel } from "./reels.js";
+import { buscarTema } from "./buscar.js";
 
 const bot = new Bot(config.telegramToken);
 
@@ -32,7 +33,7 @@ function tarefa(nome: string, fn: () => Promise<void>) {
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "Agente do portal ativo.\n\n/pautas: ver as pautas aguardando decisão\n/coletar: buscar pautas agora\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas\n\n🎬 Reels: mande um vídeo. Na legenda, a 1ª linha vira o título da capa e o resto vira a legenda do post.",
+    "Agente do portal ativo.\n\n/pautas: ver as pautas aguardando decisão\n/coletar: buscar pautas agora\n/buscar <tema>: buscar um tema\n/status: resumo do dia\n/pendentes: reenviar prévias não publicadas\n\n🎬 Reels: mande um vídeo. Na legenda, a 1ª linha vira o título da capa e o resto vira a legenda do post.",
   ),
 );
 
@@ -41,6 +42,13 @@ bot.command("pautas", async () => tarefa("pautas", () => reenviarPautas(bot)));
 bot.command("coletar", async (ctx) => {
   await ctx.reply("🔎 Buscando pautas…");
   tarefa("coleta", () => rodarColeta(bot, true));
+});
+
+bot.command("buscar", async (ctx) => {
+  const tema = ctx.match.trim();
+  if (!tema) return ctx.reply("Uso: /buscar <tema>");
+  await ctx.reply(`🔎 Buscando “${tema}”…`);
+  tarefa("busca", () => buscarTema(tema, bot).then(() => undefined));
 });
 
 bot.command("status", async (ctx) => {
@@ -154,6 +162,7 @@ await bot.api
   .setMyCommands([
     { command: "pautas", description: "Ver as pautas aguardando decisão" },
     { command: "coletar", description: "Buscar pautas agora" },
+    { command: "buscar", description: "Buscar um tema no Google Notícias" },
     { command: "status", description: "Resumo do dia" },
     { command: "pendentes", description: "Reenviar prévias não publicadas" },
   ])

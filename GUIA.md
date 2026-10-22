@@ -86,6 +86,16 @@ cd agente && npm install && npm start
 
 **Comandos do bot:** `/pautas` (pautas aguardando decisão), `/coletar` (buscar agora), `/status` (resumo), `/pendentes` (reenviar prévias não publicadas).
 
+### Canais e redator
+
+O agente usa o Codex CLI para redigir matérias por padrão. Configure `REDATOR=codex` ou `REDATOR=claude` no `.env`; o timeout do Codex é controlado por `CODEX_TIMEOUT_MIN` e o executável por `CODEX_BIN`. A redação segue `agente/prompts/redacao.md` e busca no mínimo 800 palavras.
+
+As opções de publicação ficam em `agente/data/canais.json` e são lidas a cada publicação, sem reiniciar o agente. O arquivo pode conter `redator`, `palavrasMinimas` e os canais `site`, `instagramFeed`, `instagramReels`, `instagramStories`, `facebookFeed`, `facebookReels`, `facebookStories` e `youtubeShorts`. Se o arquivo não existir, os padrões ligam site, feed/Reels/Stories do Instagram e desligam os canais novos do Facebook e YouTube. `REELS_MATERIAS=false` continua desligando os Reels do Instagram.
+
+Para canais da Página do Facebook, preencha `FACEBOOK_PAGE_ID` e `FACEBOOK_PAGE_TOKEN`. Gere o token no Meta for Developers com as permissões `pages_manage_posts`, `pages_read_engagement` e `pages_show_list`. O feed usa `POST /{page-id}/photos` com a URL pública da arte e a legenda com link da matéria.
+
+Para buscar um tema sob demanda, use `/buscar tema` no Telegram ou `npm run buscar -- "tema"` dentro de `agente`; as pautas passam pela mesma triagem e chegam para aprovação.
+
 ### Deixar rodando sozinho no Windows
 
 - **Iniciar com o Windows:** aperte `Win + R`, digite `shell:startup` e coloque ali um atalho para `iniciar-agente.bat`.
