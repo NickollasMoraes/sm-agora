@@ -7,6 +7,7 @@ import * as db from "./estado.js";
 import { ajustarTexto, aprovar, montarPrevia, publicarItem, reenviarPautas, rodarColeta, trocarImagem } from "./fluxo.js";
 import { botaoReel, receberVideo, reelPorMensagem, responderReel } from "./reels.js";
 import { buscarTema } from "./buscar.js";
+import { processarComandos } from "./comandos.js";
 
 const bot = new Bot(config.telegramToken);
 
@@ -87,6 +88,7 @@ bot.on("callback_query:data", async (ctx) => {
       break;
     case "rj":
       db.atualizar(id, { status: "rejeitado" });
+      db.registrarHistorico(id, "descartada");
       await ctx.answerCallbackQuery({ text: "Descartada." });
       await ctx.editMessageText(`❌ <s>${r.titulo.replace(/</g, "&lt;")}</s>`, { parse_mode: "HTML" }).catch(() => {});
       break;
@@ -111,6 +113,7 @@ bot.on("callback_query:data", async (ctx) => {
     }
     case "dc":
       db.atualizar(id, { status: "rejeitado" });
+      db.registrarHistorico(id, "descartada");
       await tirarBotoes();
       await ctx.answerCallbackQuery({ text: "Matéria descartada." });
       break;
@@ -147,6 +150,8 @@ cron.schedule("0 4 * * 1", () => tarefa("token Instagram", renovarToken), { time
 
 // Agenda da coleta automática
 cron.schedule(config.cronColeta, () => tarefa("coleta", () => rodarColeta(bot)), { timezone: "America/Sao_Paulo" });
+
+setInterval(() => tarefa("comandos do painel", () => processarComandos(bot)), 10_000);
 
 const modoIa = config.iaProvedor === "api" ? `API paga (${config.modelo})` : "seu plano do Claude (Claude Code)";
 console.log(`Agente iniciado. Coleta: "${config.cronColeta}". IA: ${modoIa}. Triagem: ${config.triagem}. Instagram: ${instagramConfigurado() ? "automático" : "manual"}.`);

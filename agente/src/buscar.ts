@@ -32,6 +32,7 @@ export async function buscarTema(tema: string, bot: Bot): Promise<number> {
   for (const { item, avaliacao } of aprovadas) {
     const mensagem = await enviarPauta(bot, item, avaliacao!);
     db.registrar(item, "pauta", { triagem: avaliacao, mensagens: [mensagem] });
+    db.registrarHistorico(item.id, "pauta-enviada");
   }
   await bot.api.sendMessage(config.telegramChatId, aprovadas.length ? `🔎 ${aprovadas.length} pauta(s) encontradas para “${tema}”.` : `Nenhuma pauta relevante encontrada para “${tema}”.`);
   return aprovadas.length;

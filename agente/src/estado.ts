@@ -4,6 +4,8 @@ import { config } from "./config.js";
 import type { ItemColetado } from "./coletor.js";
 import type { Triagem, Rascunho } from "./ia.js";
 import type { ImagemEscolhida } from "./imagens.js";
+import type { Publicacao } from "./publicar.js";
+import type { NomeCanal } from "./canais.js";
 
 // Memória do agente num arquivo JSON simples (agente/data/estado.json).
 
@@ -16,6 +18,13 @@ export type Status =
   | "publicado"
   | "erro";
 
+export type ResultadoCanal = {
+  status: "ok" | "erro" | "pulado";
+  detalhe?: string;
+  em: string;
+  id?: string;
+};
+
 export type Registro = ItemColetado & {
   status: Status;
   triagem?: Triagem;
@@ -27,10 +36,12 @@ export type Registro = ItemColetado & {
   mensagens: number[]; // IDs das mensagens do Telegram ligadas a este item
   atualizadoEm: string;
   erro?: string;
+  publicacao?: Publicacao;
+  canais?: Partial<Record<NomeCanal, ResultadoCanal>>;
 };
 
 const ARQUIVO = path.join(config.pastas.dados, "estado.json");
-const DIAS_GUARDAR = 30;
+const DIAS_GUARDAR = 365;
 
 type Banco = { itens: Record<string, Registro> };
 
@@ -47,7 +58,7 @@ const banco = carregar();
 export function salvar() {
   const limite = Date.now() - DIAS_GUARDAR * 86400_000;
   for (const [id, r] of Object.entries(banco.itens)) {
-    if (new Date(r.atualizadoEm).getTime() < limite) delete banco.itens[id];
+    if (new Date(r.atualizadoEm).getTime() < limite && !r.rascunho) delete banco.itens[id];
   }
   fs.mkdirSync(config.pastas.dados, { recursive: true });
   const tmp = `${ARQUIVO}.tmp`;
@@ -78,6 +89,29 @@ export function porMensagem(msgId: number): Registro | undefined {
 
 export function porStatus(...status: Status[]): Registro[] {
   return Object.values(banco.itens).filter((r) => status.includes(r.status));
+}
+
+export type EventoHistorico = {
+  data: string;
+  itemId: string;
+  titulo: string;
+  evento: string;
+  detalhe?: string;
+};
+
+const ARQUIVO_HISTORICO = path.join(config.pastas.dados, "historico.jsonl");
+
+export function registrarHistorico(itemId: string, evento: string, detalhe?: string, titulo?: string): void {
+  const registro = banco.itens[itemId];
+  const linha: EventoHistorico = {
+    data: new Date().toISOString(),
+    itemId,
+    titulo: titulo ?? registro?.titulo ?? itemId,
+    evento,
+    ...(detalhe ? { detalhe } : {}),
+  };
+  fs.mkdirSync(config.pastas.dados, { recursive: true });
+  fs.appendFileSync(ARQUIVO_HISTORICO, `${JSON.stringify(linha)}\n`);
 }
 
 // Títulos já vistos recentemente, para a IA reconhecer a mesma história vinda de outra fonte.
