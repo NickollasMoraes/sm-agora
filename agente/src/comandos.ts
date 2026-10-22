@@ -66,6 +66,8 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   }
   if (comando.acao === "publicar") {
     if (!item.rascunho || !item.imagem) throw new Error("item precisa de rascunho e imagem");
+    // Já publicado: usar "repostar" para não duplicar a matéria no site.
+    if (item.status === "publicado") throw new Error("item já publicado; use repostar");
     await publicarItem(bot, item.id);
     await bot.api.sendMessage(config.telegramChatId, "Publicado pelo painel");
     return "item publicado";
