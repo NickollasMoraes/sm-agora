@@ -78,7 +78,7 @@ export function enviarAoGitHub(caminhos: string[], mensagem: string): Promise<vo
   const vez = filaGit.then(async () => {
     await git("add", ...caminhos);
     await git("commit", "-m", mensagem);
-    await git("pull", "--rebase", "--autostash");
+    await git("pull", "--rebase=merges", "--autostash");
     await git("push");
   });
   filaGit = vez.catch(() => {});
