@@ -8,6 +8,7 @@ import { ajustarTexto, aprovar, montarPrevia, publicarItem, reenviarPautas, roda
 import { botaoReel, receberVideo, reelPorMensagem, responderReel } from "./reels.js";
 import { buscarTema } from "./buscar.js";
 import { processarComandos } from "./comandos.js";
+import { lerCanais } from "./canais.js";
 
 const bot = new Bot(config.telegramToken);
 
@@ -153,9 +154,9 @@ cron.schedule(config.cronColeta, () => tarefa("coleta", () => rodarColeta(bot)),
 
 setInterval(() => tarefa("comandos do painel", () => processarComandos(bot)), 10_000);
 
-const modoIa = config.iaProvedor === "api" ? `API paga (${config.modelo})` : "seu plano do Claude (Claude Code)";
+const modoIa = lerCanais().redator === "codex" ? "Codex" : config.iaProvedor === "api" ? `API paga (${config.modelo})` : "seu plano do Claude (Claude Code)";
 console.log(`Agente iniciado. Coleta: "${config.cronColeta}". IA: ${modoIa}. Triagem: ${config.triagem}. Instagram: ${instagramConfigurado() ? "automático" : "manual"}.`);
-if (config.iaProvedor === "claude-code" && !(await claudeCodeLogado())) {
+if (lerCanais().redator === "claude" && config.iaProvedor === "claude-code" && !(await claudeCodeLogado())) {
   console.warn("ATENÇÃO: o Claude Code não está logado. Rode 'claude auth login' no terminal.");
   if (config.telegramChatId) await bot.api.sendMessage(config.telegramChatId, "⚠️ O Claude Code não está logado no PC. Rode 'claude auth login' no terminal.").catch(() => {});
 }

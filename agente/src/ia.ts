@@ -5,16 +5,20 @@ import { categorias, config } from "./config.js";
 import type { ItemColetado } from "./coletor.js";
 import type { ImagemEscolhida } from "./imagens.js";
 import { perguntarJson, perguntarTexto } from "./claude-code.js";
+import { perguntarJson as perguntarJsonCodex, perguntarTexto as perguntarTextoCodex } from "./codex.js";
 import { triarLocal } from "./triagem-local.js";
 import fs from "node:fs";
 import path from "node:path";
 import { lerCanais } from "./canais.js";
 import { ajustarComCodex, redigirComCodex } from "./codex.js";
+import * as db from "./estado.js";
 
 // Dois jeitos de usar o Claude (IA_PROVEDOR no .env):
 // "claude-code": usa o seu plano do Claude pelo Claude Code instalado no PC (sem custo extra)
 // "api":         usa a API paga da Anthropic (ANTHROPIC_API_KEY)
 const usarApi = () => config.iaProvedor === "api";
+const usarCodex = () => lerCanais().redator === "codex";
+const registrarProvedor = (ids: string[], provedor: string) => ids.forEach((id) => db.registrarHistorico(id, "ia-provedor", provedor));
 let _client: Anthropic | undefined;
 const client = () => (_client ??= new Anthropic()); // lê ANTHROPIC_API_KEY do .env
 
@@ -55,7 +59,20 @@ export async function triar(itens: ItemColetado[], jaVistos: string[]): Promise<
   if (config.triagem === "local") return triarLocal(itens, jaVistos);
   const lista = itens.map((i) => ({ id: i.id, fonte: i.fonte, titulo: i.titulo, resumo: i.resumo.slice(0, 300) }));
   const conteudo = `Títulos já vistos nas últimas 72h:\n${jaVistos.slice(-150).join("\n") || "(nenhum)"}\n\nItens novos:\n${JSON.stringify(lista, null, 1)}`;
-  if (!usarApi()) return (await perguntarJson(conteudo, TriagemSchema, { sistema: SISTEMA_TRIAGEM })).avaliacoes;
+  if (usarCodex()) {
+    try {
+      const resultado = (await perguntarJsonCodex(conteudo, TriagemSchema, { sistema: SISTEMA_TRIAGEM })).avaliacoes;
+      registrarProvedor(itens.map((item) => item.id), "codex");
+      return resultado;
+    } catch (e) {
+      console.warn(`[ia] Codex falhou na triagem; tentando Claude: ${(e as Error).message}`);
+    }
+  }
+  if (!usarApi()) {
+    const resultado = (await perguntarJson(conteudo, TriagemSchema, { sistema: SISTEMA_TRIAGEM })).avaliacoes;
+    registrarProvedor(itens.map((item) => item.id), "claude");
+    return resultado;
+  }
   const resp = await client().beta.messages.parse({
     model: config.modeloTriagem,
     max_tokens: 16000,
@@ -67,12 +84,23 @@ export async function triar(itens: ItemColetado[], jaVistos: string[]): Promise<
   if (resp.stop_reason === "refusal" || !resp.parsed_output) {
     throw new Error(`Triagem sem resposta válida (stop_reason: ${resp.stop_reason})`);
   }
+  registrarProvedor(itens.map((item) => item.id), "claude-api");
   return resp.parsed_output.avaliacoes;
 }
 
 // ---------------------------------------------------------------- Pesquisa (quando a página original não pôde ser lida)
 
 export async function pesquisarFatos(titulo: string, fonte: string): Promise<string> {
+  const pedidoPesquisa = `Pesquise na web a notícia "${titulo}" (fonte: ${fonte}), de Santa Maria/RS. Liste os fatos verificáveis e os links das fontes consultadas. Responda só com os fatos, em português.`;
+  if (usarCodex()) {
+    try {
+      return await perguntarTextoCodex(pedidoPesquisa, {
+        sistema: "Você é pesquisador de uma redação jornalística. Busque e relate apenas fatos verificáveis, com as fontes.",
+      });
+    } catch (e) {
+      console.warn(`[ia] Codex falhou na pesquisa; tentando Claude: ${(e as Error).message}`);
+    }
+  }
   if (!usarApi()) {
     return perguntarTexto(
       `Pesquise na web a notícia "${titulo}" (fonte: ${fonte}), de Santa Maria/RS. Liste os fatos verificáveis (o quê, quem, quando, onde, números, citações curtas com autor) e os links das fontes consultadas. Responda só com os fatos, em português.`,
@@ -146,8 +174,20 @@ export async function redigir(item: ItemColetado, material: string, orientacao?:
     .filter(Boolean)
     .join("\n\n");
 
-  if (lerCanais().redator === "codex") return redigirComCodex(item, material, orientacao);
-  if (!usarApi()) return perguntarJson(pedido, RascunhoSchema, { sistema: SISTEMA_REDACAO });
+  if (usarCodex()) {
+    try {
+      const resultado = await redigirComCodex(item, material, orientacao);
+      db.registrarHistorico(item.id, "ia-provedor", "codex");
+      return resultado;
+    } catch (e) {
+      console.warn(`[ia] Codex falhou na redação; tentando Claude: ${(e as Error).message}`);
+    }
+  }
+  if (!usarApi()) {
+    const resultado = await perguntarJson(pedido, RascunhoSchema, { sistema: SISTEMA_REDACAO });
+    db.registrarHistorico(item.id, "ia-provedor", "claude");
+    return resultado;
+  }
   const resp = await client().beta.messages.parse({
     model: config.modelo,
     max_tokens: 16000,
@@ -187,7 +227,14 @@ export async function escolherImagens(rascunho: Rascunho, candidatas: ImagemEsco
   const pedido = `Matéria: ${rascunho.titulo}\n${rascunho.subtitulo}\nEditoria: ${rascunho.categoria}\n\nFotos candidatas:\n${lista}`;
 
   let aprovadas: number[];
-  if (!usarApi()) {
+  if (usarCodex()) {
+    try {
+      aprovadas = (await perguntarJsonCodex(pedido, EscolhaImagemSchema, { sistema: SISTEMA_IMAGEM })).aprovadas;
+    } catch (e) {
+      console.warn(`[ia] Codex falhou na escolha de imagens; tentando Claude: ${(e as Error).message}`);
+      aprovadas = !usarApi() ? (await perguntarJson(pedido, EscolhaImagemSchema, { sistema: SISTEMA_IMAGEM })).aprovadas : [];
+    }
+  } else if (!usarApi()) {
     aprovadas = (await perguntarJson(pedido, EscolhaImagemSchema, { sistema: SISTEMA_IMAGEM })).aprovadas;
   } else {
     const resp = await client().beta.messages.parse({
@@ -201,14 +248,21 @@ export async function escolherImagens(rascunho: Rascunho, candidatas: ImagemEsco
     aprovadas = resp.parsed_output?.aprovadas ?? [];
   }
   const vistos = new Set<number>();
-  return aprovadas
+  const escolhidas = aprovadas
     .filter((i) => candidatas[i] && !vistos.has(i) && vistos.add(i))
     .map((i) => candidatas[i]);
+  return escolhidas.length > 0 || !usarCodex() ? escolhidas : [candidatas[0]];
 }
 
 export async function ajustar(rascunho: Rascunho, pedido: string): Promise<Rascunho> {
   const conteudo = `Esta é a matéria atual:\n${JSON.stringify(rascunho, null, 1)}\n\nAplique este pedido do editor e devolva a matéria completa: ${pedido}`;
-  if (lerCanais().redator === "codex") return ajustarComCodex(rascunho, pedido);
+  if (usarCodex()) {
+    try {
+      return await ajustarComCodex(rascunho, pedido);
+    } catch (e) {
+      console.warn(`[ia] Codex falhou no ajuste; tentando Claude: ${(e as Error).message}`);
+    }
+  }
   if (!usarApi()) return perguntarJson(conteudo, RascunhoSchema, { sistema: SISTEMA_REDACAO });
   const resp = await client().beta.messages.parse({
     model: config.modelo,
