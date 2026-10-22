@@ -3,6 +3,7 @@ import path from "node:path";
 import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { config, nomesCategorias } from "./config.js";
 import { lerCanais } from "./canais.js";
+import type { NomeCanal } from "./canais.js";
 import { coletarTudo, type ItemColetado } from "./coletor.js";
 import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
@@ -51,6 +52,7 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
     for (const { item, t } of aprovadas) {
       const msgId = await enviarPauta(bot, item, t!);
       db.registrar(item, "pauta", { triagem: t, mensagens: [msgId] });
+      db.registrarHistorico(item.id, "pauta-enviada");
     }
 
     if (aprovadas.length === 0 && avisarSeVazio) {
@@ -89,6 +91,7 @@ export async function reenviarPautas(bot: Bot): Promise<void> {
   for (const r of pendentes) {
     const msgId = await enviarPauta(bot, r, r.triagem!);
     db.atualizar(r.id, { mensagens: [...r.mensagens, msgId] });
+    db.registrarHistorico(r.id, "pauta-enviada");
   }
 }
 
@@ -96,6 +99,7 @@ export async function reenviarPautas(bot: Bot): Promise<void> {
 
 export async function aprovar(bot: Bot, id: string, orientacao?: string): Promise<void> {
   const r = db.atualizar(id, { status: "redigindo", orientacao });
+  db.registrarHistorico(id, "aprovada", orientacao);
   const aviso = await bot.api.sendMessage(config.telegramChatId, `✍️ Escrevendo: <b>${h(r.titulo)}</b>…`, { parse_mode: "HTML" });
   db.atualizar(id, { mensagens: [...r.mensagens, aviso.message_id] });
 
@@ -112,9 +116,11 @@ export async function aprovar(bot: Bot, id: string, orientacao?: string): Promis
       await bot.api.sendMessage(config.telegramChatId, `⚠️ A matéria ficou com ${palavras} palavras; o mínimo configurado é ${lerCanais().palavrasMinimas}.`);
     }
     db.atualizar(id, { rascunho, tentativaImagem: 0, imagensAprovadas: undefined });
+    db.registrarHistorico(id, "redigida");
     await montarPrevia(bot, id);
   } catch (e) {
     db.atualizar(id, { status: "erro", erro: (e as Error).message });
+    db.registrarHistorico(id, "erro", (e as Error).message);
     await bot.api.sendMessage(config.telegramChatId, `⚠️ Erro ao escrever "${r.titulo}": ${(e as Error).message}`);
   }
 }
@@ -204,7 +210,12 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
     ? await publicar(r.rascunho!, foto, arte, r.imagem)
     : { slug: r.rascunho!.slug, url: `${config.siteUrl}/noticia/${r.rascunho!.slug}/`, enviadoAoGitHub: false, aviso: "canal site desligado" };
   resultados.push(configCanais.site ? (pub.enviadoAoGitHub ? "site: ok" : `site: erro: ${pub.aviso}`) : "site: pulado: desligado");
-  db.atualizar(id, { status: "publicado" });
+  db.atualizar(id, {
+    status: "publicado",
+    publicacao: pub,
+    canais: { ...(r.canais ?? {}), site: { status: pub.enviadoAoGitHub ? "ok" : "erro", detalhe: pub.aviso, em: new Date().toISOString() } },
+  });
+  db.registrarHistorico(id, "publicada", pub.url);
 
   // A IA já costuma chamar para o link da bio; só acrescenta quando ela não chamou.
   const textoIg = r.rascunho!.legendaInstagram;
@@ -285,10 +296,57 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
 
   if (configCanais.youtubeShorts) resultados.push(`youtubeShorts: ${await postarShort(video ?? Buffer.alloc(0), r.rascunho!.tituloArte, legenda)}`);
   else resultados.push("youtubeShorts: pulado: desligado");
+  const canais: Partial<Record<NomeCanal, db.ResultadoCanal>> = {};
+  for (const resultado of resultados) {
+    const [nome, status, ...resto] = resultado.split(": ");
+    if (!nome || !status || !["ok", "erro", "pulado"].includes(status)) continue;
+    const detalhe = resto.join(": ") || undefined;
+    canais[nome as NomeCanal] = { status: status as "ok" | "erro" | "pulado", detalhe, em: new Date().toISOString() };
+    db.registrarHistorico(id, status === "ok" ? "canal-ok" : status === "erro" ? "canal-erro" : "canal-ok", `${nome}${detalhe ? `: ${detalhe}` : ""}`);
+  }
+  db.atualizar(id, { canais: { ...(db.obter(id).canais ?? {}), ...canais } });
   await bot.api.sendMessage(config.telegramChatId, `✅ Publicado: ${pub.url}\n${pub.enviadoAoGitHub ? "O site atualiza em 1 a 3 minutos." : `⚠️ ${pub.aviso}`}\n\n${resultados.join("\n")}`);
 
   fs.rmSync(arquivoPrevia(id, "foto"), { force: true });
   fs.rmSync(arquivoPrevia(id, "arte"), { force: true });
+}
+
+export async function postarNosCanais(
+  bot: Bot,
+  item: db.Registro,
+  pub: import("./publicar.js").Publicacao,
+  filtro?: NomeCanal[],
+): Promise<void> {
+  const canais = lerCanais().canais;
+  const deve = (canal: NomeCanal) => !filtro || filtro.includes(canal);
+  const legendaBase = item.rascunho!.legendaInstagram;
+  const legenda = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
+  const resultados: Partial<Record<NomeCanal, db.ResultadoCanal>> = {};
+  const registrar = (canal: NomeCanal, status: "ok" | "erro" | "pulado", detalhe?: string) => {
+    resultados[canal] = { status, detalhe, em: new Date().toISOString() };
+    db.registrarHistorico(item.id, status === "ok" ? "canal-ok" : status === "erro" ? "canal-erro" : "canal-ok", `${canal}${detalhe ? `: ${detalhe}` : ""}`);
+  };
+  if (deve("instagramFeed")) {
+    if (!canais.instagramFeed || !instagramConfigurado()) registrar("instagramFeed", "pulado", canais.instagramFeed ? "falta INSTAGRAM_ACCESS_TOKEN" : "desligado");
+    else try { await postarNoInstagram(urlArte(pub.slug), legenda); registrar("instagramFeed", "ok"); } catch (e) { registrar("instagramFeed", "erro", (e as Error).message); }
+  }
+  if (deve("facebookFeed")) {
+    if (!canais.facebookFeed || !facebookConfigurado()) registrar("facebookFeed", "pulado", canais.facebookFeed ? "falta FACEBOOK_PAGE_TOKEN" : "desligado");
+    else try { await postarFacebookFeed(urlArte(pub.slug), `${item.rascunho!.titulo}\n\n${pub.url}`); registrar("facebookFeed", "ok"); } catch (e) { registrar("facebookFeed", "erro", (e as Error).message); }
+  }
+  if (deve("instagramStories") && canais.instagramStories) {
+    if (!instagramConfigurado()) registrar("instagramStories", "pulado", "falta INSTAGRAM_ACCESS_TOKEN");
+    else try { await postarStoriesInstagram(urlArte(pub.slug)); registrar("instagramStories", "ok"); } catch (e) { registrar("instagramStories", "erro", (e as Error).message); }
+  }
+  if (deve("facebookStories") && canais.facebookStories) {
+    if (!facebookConfigurado()) registrar("facebookStories", "pulado", "falta FACEBOOK_PAGE_TOKEN");
+    else try { await postarFacebookStory(urlArte(pub.slug)); registrar("facebookStories", "ok"); } catch (e) { registrar("facebookStories", "erro", (e as Error).message); }
+  }
+  if (deve("instagramReels")) registrar("instagramReels", "pulado", "repostagem de reels requer nova arte");
+  if (deve("facebookReels")) registrar("facebookReels", "pulado", "repostagem de reels requer nova arte");
+  if (deve("youtubeShorts")) registrar("youtubeShorts", "pulado", "repostagem de shorts não implementada");
+  db.atualizar(item.id, { canais: { ...(db.obter(item.id).canais ?? {}), ...resultados } });
+  await bot.api.sendMessage(config.telegramChatId, `🔁 Repostagem concluída: ${pub.url}`);
 }
 
 async function enviarArteManual(bot: Bot, arte: Buffer, legenda: string) {
