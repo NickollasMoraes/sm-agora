@@ -6,6 +6,7 @@ import type { NomeCanal } from "./canais.js";
 import * as db from "./estado.js";
 import { enviarPauta, montarPrevia, postarNosCanais, publicarItem } from "./fluxo.js";
 import { buscarTema } from "./buscar.js";
+import type { Publicacao } from "./publicar.js";
 
 type Acao = "reenviar-previa" | "publicar" | "repostar" | "rebuscar";
 type Comando = { id: string; acao: Acao; itemId: string; canais?: string[]; criadoEm: string; origem: string };
@@ -43,6 +44,19 @@ export async function processarComandos(bot: Bot): Promise<void> {
   }
 }
 
+// Itens publicados pela v1 não guardavam a publicação: acha a matéria no site pelo slug ou pelo título.
+function publicacaoAntiga(item: db.Registro): Publicacao {
+  if (!item.rascunho) throw new Error("item publicado sem rascunho");
+  const arquivos = fs.readdirSync(config.pastas.noticias).filter((nome) => nome.endsWith(".md"));
+  const titulo = `titulo: ${JSON.stringify(item.rascunho.titulo)}`;
+  const arquivo =
+    arquivos.find((nome) => nome === `${item.rascunho!.slug}.md`) ??
+    arquivos.find((nome) => fs.readFileSync(path.join(config.pastas.noticias, nome), "utf8").includes(titulo));
+  if (!arquivo) throw new Error("matéria não encontrada no site");
+  const slug = arquivo.replace(/\.md$/, "");
+  return { slug, url: `${config.siteUrl}/noticia/${slug}/`, enviadoAoGitHub: true };
+}
+
 async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   if (!comando.id || !comando.acao || !comando.itemId || !comando.criadoEm || comando.origem !== "painel") throw new Error("comando inválido");
   db.registrarHistorico(comando.itemId, "comando", comando.acao);
@@ -72,7 +86,8 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
     await bot.api.sendMessage(config.telegramChatId, "Publicado pelo painel");
     return "item publicado";
   }
-  if (item.status !== "publicado" || !item.publicacao) throw new Error("item não está publicado");
-  await postarNosCanais(bot, item, item.publicacao, comando.canais as NomeCanal[] | undefined);
+  if (item.status !== "publicado") throw new Error("item não está publicado");
+  const publicacao = item.publicacao ?? publicacaoAntiga(item);
+  await postarNosCanais(bot, item, publicacao, comando.canais as NomeCanal[] | undefined);
   return "canais repostados";
 }
