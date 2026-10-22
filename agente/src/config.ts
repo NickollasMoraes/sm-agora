@@ -17,6 +17,9 @@ export const config = {
 
   // "claude-code" = usa seu plano do Claude (sem custo extra). "api" = API paga (ANTHROPIC_API_KEY).
   iaProvedor: (process.env.IA_PROVEDOR || "claude-code") as "claude-code" | "api",
+  redator: (process.env.REDATOR || "codex") as "codex" | "claude",
+  codexBin: process.env.CODEX_BIN || "codex.cmd",
+  codexTimeoutMin: Number(process.env.CODEX_TIMEOUT_MIN || 10),
   // "local" = triagem por palavras-chave (grátis). "ia" = triagem feita pela IA.
   triagem: (process.env.TRIAGEM || "local") as "local" | "ia",
   // Modelo no Claude Code (vazio = padrão do seu plano). Ex.: opus, sonnet
@@ -38,6 +41,8 @@ export const config = {
   // Instagram (opcional: sem isso, o bot manda a arte pronta para você postar)
   igUserId: process.env.INSTAGRAM_USER_ID ?? "",
   igToken: process.env.INSTAGRAM_ACCESS_TOKEN ?? "",
+  facebookPageId: process.env.FACEBOOK_PAGE_ID ?? "",
+  facebookPageToken: process.env.FACEBOOK_PAGE_TOKEN ?? "",
   // Reels curto (8 s) de cada matéria, além do post da arte. Só na aba Reels, sem repetir na grade.
   reelsMaterias: (process.env.REELS_MATERIAS ?? "true") === "true",
 

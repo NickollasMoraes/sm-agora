@@ -158,6 +158,11 @@ export async function arteInstagram(foto: Buffer | null, titulo: string, categor
     .toBuffer();
 }
 
+export async function arteInstagramStory(foto: Buffer | null, titulo: string, categoria: string, credito?: string): Promise<Buffer> {
+  const base = await camadasReelsMateria(foto, titulo, categoria, credito);
+  return base.capa;
+}
+
 // Capa de Reels: 1080x1920. A grade do perfil mostra só o centro (3:4, de y=240 a 1680), então
 // selo, etiqueta e manchete ficam nessa faixa.
 export async function capaReels(titulo: string): Promise<Buffer> {

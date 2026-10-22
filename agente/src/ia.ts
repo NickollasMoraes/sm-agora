@@ -6,6 +6,10 @@ import type { ItemColetado } from "./coletor.js";
 import type { ImagemEscolhida } from "./imagens.js";
 import { perguntarJson, perguntarTexto } from "./claude-code.js";
 import { triarLocal } from "./triagem-local.js";
+import fs from "node:fs";
+import path from "node:path";
+import { lerCanais } from "./canais.js";
+import { ajustarComCodex, redigirComCodex } from "./codex.js";
 
 // Dois jeitos de usar o Claude (IA_PROVEDOR no .env):
 // "claude-code": usa o seu plano do Claude pelo Claude Code instalado no PC (sem custo extra)
@@ -103,13 +107,13 @@ export async function pesquisarFatos(titulo: string, fonte: string): Promise<str
 
 // ---------------------------------------------------------------- Redação
 
-const RascunhoSchema = z.object({
+export const RascunhoSchema = z.object({
   titulo: z.string().describe("Título jornalístico, até 90 caracteres, sem caixa alta e sem ponto final"),
   subtitulo: z.string().describe("Linha fina com a informação principal, até 180 caracteres"),
   slug: z.string().describe("URL amigável: minúsculas, sem acentos, palavras separadas por hífen, até 70 caracteres"),
   categoria: z.enum(categorias),
   tags: z.array(z.string()).describe("3 a 6 tags curtas, minúsculas, com hífen no lugar de espaço"),
-  corpo: z.string().describe("Matéria em Markdown, 300 a 600 palavras, com 1 ou 2 intertítulos ##"),
+  corpo: z.string().describe("Matéria em Markdown, no mínimo 800 palavras, alvo de 800 a 1.100, com 3 a 5 intertítulos ##"),
   fontes: z.array(z.object({ nome: z.string(), url: z.string() })),
   legendaInstagram: z.string().describe("Legenda para o Instagram: 2 a 4 frases, chamada para o link na bio, 5 a 8 hashtags"),
   tituloArte: z.string().describe("Versão curta do título para a arte do Instagram, até 70 caracteres"),
@@ -122,7 +126,8 @@ const RascunhoSchema = z.object({
 });
 export type Rascunho = z.infer<typeof RascunhoSchema>;
 
-const SISTEMA_REDACAO = `Você é repórter do ${config.siteNome}, portal de notícias de Santa Maria (RS). Escreva em português do Brasil, em estilo jornalístico claro, direto e neutro (pirâmide invertida: o mais importante no primeiro parágrafo).
+const SISTEMA_REDACAO = fs.readFileSync(path.join(config.pastas.raiz, "agente", "prompts", "redacao.md"), "utf8");
+/* const SISTEMA_REDACAO_ANTIGO = `Você é repórter do ${config.siteNome}, portal de notícias de Santa Maria (RS). Escreva em português do Brasil, em estilo jornalístico claro, direto e neutro (pirâmide invertida: o mais importante no primeiro parágrafo).
 
 REGRAS DE DIREITO AUTORAL E ÉTICA (obrigatórias):
 1. Escreva um texto ORIGINAL. Nunca copie frases do material de referência; reescreva com suas palavras e sua estrutura. Citações literais só entre aspas, curtas (até 2 frases) e com o autor identificado.
@@ -130,7 +135,7 @@ REGRAS DE DIREITO AUTORAL E ÉTICA (obrigatórias):
 3. Use APENAS fatos presentes no material. Não invente números, nomes, datas, falas ou detalhes. Se faltar uma informação importante, diga que ela não foi divulgada.
 4. Agregue valor local quando o material permitir: explique o impacto para quem mora em Santa Maria, serviço (datas, endereços, como participar).
 5. Em casos policiais, não exponha nomes de suspeitos que não foram formalmente acusados nem de vítimas; nunca identifique menores de idade.
-6. Não use clichês ("vale ressaltar", "é importante destacar") nem adjetivação opinativa.`;
+6. Não use clichês ("vale ressaltar", "é importante destacar") nem adjetivação opinativa.`; */
 
 export async function redigir(item: ItemColetado, material: string, orientacao?: string): Promise<Rascunho> {
   const pedido = [
@@ -141,6 +146,7 @@ export async function redigir(item: ItemColetado, material: string, orientacao?:
     .filter(Boolean)
     .join("\n\n");
 
+  if (lerCanais().redator === "codex") return redigirComCodex(item, material, orientacao);
   if (!usarApi()) return perguntarJson(pedido, RascunhoSchema, { sistema: SISTEMA_REDACAO });
   const resp = await client().beta.messages.parse({
     model: config.modelo,
@@ -202,6 +208,7 @@ export async function escolherImagens(rascunho: Rascunho, candidatas: ImagemEsco
 
 export async function ajustar(rascunho: Rascunho, pedido: string): Promise<Rascunho> {
   const conteudo = `Esta é a matéria atual:\n${JSON.stringify(rascunho, null, 1)}\n\nAplique este pedido do editor e devolva a matéria completa: ${pedido}`;
+  if (lerCanais().redator === "codex") return ajustarComCodex(rascunho, pedido);
   if (!usarApi()) return perguntarJson(conteudo, RascunhoSchema, { sistema: SISTEMA_REDACAO });
   const resp = await client().beta.messages.parse({
     model: config.modelo,

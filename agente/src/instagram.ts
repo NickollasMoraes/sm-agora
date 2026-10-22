@@ -110,3 +110,9 @@ export async function postarNoInstagram(urlImagem: string, legenda: string): Pro
   }
   return chamar(`${await contaId()}/media_publish`, { creation_id: container });
 }
+
+export async function postarStoriesInstagram(urlImagem: string): Promise<string> {
+  await esperarUrlNoAr(urlImagem);
+  const container = await chamar(`${await contaId()}/media`, { media_type: "STORIES", image_url: urlImagem });
+  return chamar(`${await contaId()}/media_publish`, { creation_id: container });
+}
