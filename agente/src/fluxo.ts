@@ -2,14 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { config, nomesCategorias } from "./config.js";
+import { lerCanais } from "./canais.js";
 import { coletarTudo, type ItemColetado } from "./coletor.js";
 import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
 import { ajustar, escolherImagens, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
 import { baixarImagem, buscarCandidatas } from "./imagens.js";
-import { arteInstagram, camadasReelsMateria, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
-import { publicar } from "./publicar.js";
-import { instagramConfigurado, postarNoInstagram } from "./instagram.js";
+import { arteInstagram, arteInstagramStory, camadasReelsMateria, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
+import { enviarAoGitHub, publicar } from "./publicar.js";
+import { instagramConfigurado, postarNoInstagram, postarStoriesInstagram } from "./instagram.js";
+import { facebookConfigurado, postarFacebookFeed, postarFacebookReels, postarFacebookStory } from "./facebook.js";
+import { postarShort } from "./youtube.js";
 import { publicarReelsPeloSite } from "./reels.js";
 import { videoDaMateria } from "./video.js";
 
@@ -58,7 +61,7 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
   }
 }
 
-async function enviarPauta(bot: Bot, item: ItemColetado, t: Triagem): Promise<number> {
+export async function enviarPauta(bot: Bot, item: ItemColetado, t: Triagem): Promise<number> {
   const texto =
     `📰 <b>${h(item.titulo)}</b>\n\n${h(t.resumo)}\n\n` +
     `🏷 ${nomesCategorias[t.categoria]} · nota ${t.nota}/10\n🔗 <a href="${item.link}">${h(item.fonte)}</a>\n\n` +
@@ -104,6 +107,10 @@ export async function aprovar(bot: Bot, id: string, orientacao?: string): Promis
       material = `${r.resumo}\n\n${material}\n\n${pesquisa}`.trim();
     }
     const rascunho = await redigir(r, material, orientacao);
+    const palavras = rascunho.corpo.trim().split(/\s+/).filter(Boolean).length;
+    if (palavras < lerCanais().palavrasMinimas) {
+      await bot.api.sendMessage(config.telegramChatId, `⚠️ A matéria ficou com ${palavras} palavras; o mínimo configurado é ${lerCanais().palavrasMinimas}.`);
+    }
     db.atualizar(id, { rascunho, tentativaImagem: 0, imagensAprovadas: undefined });
     await montarPrevia(bot, id);
   } catch (e) {
@@ -191,40 +198,94 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
   const r = db.obter(id);
   const foto = fs.readFileSync(arquivoPrevia(id, "foto"));
   const arte = fs.readFileSync(arquivoPrevia(id, "arte"));
-  const pub = await publicar(r.rascunho!, foto, arte, r.imagem);
+  const configCanais = lerCanais().canais;
+  const resultados: string[] = [];
+  const pub = configCanais.site
+    ? await publicar(r.rascunho!, foto, arte, r.imagem)
+    : { slug: r.rascunho!.slug, url: `${config.siteUrl}/noticia/${r.rascunho!.slug}/`, enviadoAoGitHub: false, aviso: "canal site desligado" };
+  resultados.push(configCanais.site ? (pub.enviadoAoGitHub ? "site: ok" : `site: erro: ${pub.aviso}`) : "site: pulado: desligado");
   db.atualizar(id, { status: "publicado" });
-
-  await bot.api.sendMessage(
-    config.telegramChatId,
-    `✅ Publicado: ${pub.url}\n${pub.enviadoAoGitHub ? "O site atualiza em 1 a 3 minutos." : `⚠️ ${pub.aviso}`}`,
-  );
 
   // A IA já costuma chamar para o link da bio; só acrescenta quando ela não chamou.
   const textoIg = r.rascunho!.legendaInstagram;
   const legenda = /bio/i.test(textoIg) ? textoIg : `${textoIg}\n\n🔗 Matéria completa no link da bio`;
-  if (instagramConfigurado() && pub.enviadoAoGitHub) {
+  if (configCanais.instagramFeed && instagramConfigurado() && pub.enviadoAoGitHub) {
     try {
       await postarNoInstagram(urlArte(pub.slug), legenda);
-      await bot.api.sendMessage(config.telegramChatId, "📸 Postado no Instagram.");
+      resultados.push("instagramFeed: ok");
     } catch (e) {
-      await bot.api.sendMessage(config.telegramChatId, `⚠️ Instagram: ${(e as Error).message}`);
+      resultados.push(`instagramFeed: erro: ${(e as Error).message}`);
       await enviarArteManual(bot, arte, legenda);
     }
-  } else {
+  } else if (configCanais.instagramFeed) {
+    resultados.push(instagramConfigurado() ? "instagramFeed: pulado: site não publicado" : "instagramFeed: pulado: falta INSTAGRAM_ACCESS_TOKEN");
     await enviarArteManual(bot, arte, legenda);
-  }
+  } else resultados.push("instagramFeed: pulado: desligado");
 
-  if (config.reelsMaterias && instagramConfigurado() && pub.enviadoAoGitHub) {
+  let video: Buffer | undefined;
+  if ((configCanais.instagramReels || configCanais.facebookReels) && (instagramConfigurado() || facebookConfigurado()) && pub.enviadoAoGitHub) {
     try {
       const credito = r.imagem ? `${r.imagem.autor} / ${r.imagem.acervo}` : undefined;
       const camadas = await camadasReelsMateria(r.imagem ? foto : null, r.rascunho!.tituloArte, r.rascunho!.categoria, credito);
-      const video = await videoDaMateria(camadas.fundo, camadas.camada);
-      const link = await publicarReelsPeloSite(pub.slug, video, camadas.capa, legenda, r.rascunho!.tituloArte, false);
-      await bot.api.sendMessage(config.telegramChatId, `🎬 Reels da matéria publicado: ${link}`);
+      video = await videoDaMateria(camadas.fundo, camadas.camada);
+      if (configCanais.facebookReels && facebookConfigurado()) {
+        fs.mkdirSync(config.pastas.capasReels, { recursive: true });
+        fs.writeFileSync(path.join(config.pastas.capasReels, `${pub.slug}.mp4`), video);
+        await enviarAoGitHub(["site/public/imagens/reels"], `Reels Facebook: ${r.rascunho!.titulo}`);
+        await postarFacebookReels(`${config.siteUrl}/imagens/reels/${pub.slug}.mp4`, legenda);
+        resultados.push("facebookReels: ok");
+        fs.rmSync(path.join(config.pastas.capasReels, `${pub.slug}.mp4`), { force: true });
+        await enviarAoGitHub(["site/public/imagens/reels"], `Remove Reels Facebook: ${r.rascunho!.titulo}`).catch(() => {});
+      }
+      if (configCanais.instagramReels && instagramConfigurado()) {
+        const link = await publicarReelsPeloSite(pub.slug, video, camadas.capa, legenda, r.rascunho!.tituloArte, false);
+        resultados.push(`instagramReels: ok (${link})`);
+      }
     } catch (e) {
-      await bot.api.sendMessage(config.telegramChatId, `⚠️ Reels da matéria não publicado: ${(e as Error).message}`);
+      resultados.push(`instagramReels: erro: ${(e as Error).message}`);
     }
-  }
+  } else if (configCanais.instagramReels) resultados.push(instagramConfigurado() ? "instagramReels: pulado: site não publicado" : "instagramReels: pulado: falta INSTAGRAM_ACCESS_TOKEN");
+  else resultados.push("instagramReels: pulado: desligado");
+
+  let storyUrl = "";
+  if (configCanais.instagramStories || configCanais.facebookStories) {
+    if (!instagramConfigurado() && !facebookConfigurado()) resultados.push("instagramStories: pulado: falta INSTAGRAM_ACCESS_TOKEN");
+    else if (!pub.enviadoAoGitHub) resultados.push("instagramStories: pulado: site não publicado");
+    else try {
+      const story = await arteInstagramStory(r.imagem ? foto : null, r.rascunho!.tituloArte, r.rascunho!.categoria, r.imagem ? `${r.imagem.autor} / ${r.imagem.acervo}` : undefined);
+      fs.mkdirSync(config.pastas.artes, { recursive: true });
+      fs.writeFileSync(path.join(config.pastas.artes, `${pub.slug}-story.jpg`), story);
+      await enviarAoGitHub(["site/public/imagens/instagram"], `Story: ${r.rascunho!.titulo}`);
+      storyUrl = `${config.siteUrl}/imagens/instagram/${pub.slug}-story.jpg`;
+      if (configCanais.instagramStories) {
+        if (instagramConfigurado()) {
+          await postarStoriesInstagram(storyUrl);
+          resultados.push("instagramStories: ok");
+        } else resultados.push("instagramStories: pulado: falta INSTAGRAM_ACCESS_TOKEN");
+      }
+    } catch (e) { resultados.push(`instagramStories: erro: ${(e as Error).message}`); }
+  } else resultados.push("instagramStories: pulado: desligado");
+  if (!configCanais.instagramStories && configCanais.facebookStories) resultados.push("instagramStories: pulado: desligado");
+
+  if (configCanais.facebookFeed) {
+    if (!facebookConfigurado()) resultados.push("facebookFeed: pulado: falta FACEBOOK_PAGE_TOKEN");
+    else if (!pub.enviadoAoGitHub) resultados.push("facebookFeed: pulado: site não publicado");
+    else try { await postarFacebookFeed(urlArte(pub.slug), `${r.rascunho!.titulo}\n\n${pub.url}`); resultados.push("facebookFeed: ok"); } catch (e) { resultados.push(`facebookFeed: erro: ${(e as Error).message}`); }
+  } else resultados.push("facebookFeed: pulado: desligado");
+  if (configCanais.facebookReels) {
+    if (!facebookConfigurado()) resultados.push("facebookReels: pulado: falta FACEBOOK_PAGE_TOKEN");
+    else if (!video) resultados.push("facebookReels: pulado: vídeo indisponível");
+    // O resultado de sucesso ou erro já foi registrado durante a geração do vídeo.
+  } else resultados.push("facebookReels: pulado: desligado");
+  if (configCanais.facebookStories) {
+    if (!facebookConfigurado()) resultados.push("facebookStories: pulado: falta FACEBOOK_PAGE_TOKEN");
+    else if (!pub.enviadoAoGitHub) resultados.push("facebookStories: pulado: site não publicado");
+    else try { await postarFacebookStory(storyUrl || urlArte(pub.slug)); resultados.push("facebookStories: ok"); } catch (e) { resultados.push(`facebookStories: erro: ${(e as Error).message}`); }
+  } else resultados.push("facebookStories: pulado: desligado");
+
+  if (configCanais.youtubeShorts) resultados.push(`youtubeShorts: ${await postarShort(video ?? Buffer.alloc(0), r.rascunho!.tituloArte, legenda)}`);
+  else resultados.push("youtubeShorts: pulado: desligado");
+  await bot.api.sendMessage(config.telegramChatId, `✅ Publicado: ${pub.url}\n${pub.enviadoAoGitHub ? "O site atualiza em 1 a 3 minutos." : `⚠️ ${pub.aviso}`}\n\n${resultados.join("\n")}`);
 
   fs.rmSync(arquivoPrevia(id, "foto"), { force: true });
   fs.rmSync(arquivoPrevia(id, "arte"), { force: true });

@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "testar-fontes": "tsx src/testar-fontes.ts",
     "coletar-agora": "tsx src/index.ts --coletar-agora",
+    "buscar": "tsx src/buscar-cli.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
