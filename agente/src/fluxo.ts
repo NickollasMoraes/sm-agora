@@ -329,12 +329,17 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
     if (!pronto) { resultados.push(`${nome}: erro: ${falta}`); return; }
     try { await acao(); resultados.push(`${nome}: ok`); } catch (e) { resultados.push(`${nome}: erro: ${(e as Error).message}`); }
   };
+  // Instagram um de cada vez: com Feed, Reels e Story juntos na mesma conta o
+  // Stories falhava ("The requested resource does not exist"). Facebook segue em paralelo.
+  const instagram = async () => {
+    await executar("instagramFeed", canais.instagramFeed, instagramConfigurado(), true, () => postarNoInstagram(urlArte(pub.slug), legenda), "falta INSTAGRAM_ACCESS_TOKEN");
+    await executar("instagramStories", canais.instagramStories, instagramConfigurado(), Boolean(midias.story), () => postarStoriesInstagram(storyUrl), "imagem do Story não ficou pronta a tempo");
+    await executar("instagramReels", canais.instagramReels, instagramConfigurado(), Boolean(midias.reel && midias.capa), () => postarReels(reelUrl, capaUrl, legenda, false), "vídeo do Reels não ficou pronto a tempo");
+  };
   const trabalhos = [
-    executar("instagramFeed", canais.instagramFeed, instagramConfigurado(), true, () => postarNoInstagram(urlArte(pub.slug), legenda), "falta INSTAGRAM_ACCESS_TOKEN"),
+    instagram(),
     executar("facebookFeed", canais.facebookFeed, facebookConfigurado(), true, () => postarFacebookFeed(urlArte(pub.slug), `${r.rascunho!.titulo}\n\n${pub.url}`), "falta FACEBOOK_PAGE_TOKEN"),
-    executar("instagramStories", canais.instagramStories, instagramConfigurado(), Boolean(midias.story), () => postarStoriesInstagram(storyUrl), "imagem do Story não ficou pronta a tempo"),
     executar("facebookStories", canais.facebookStories, facebookConfigurado(), Boolean(midias.story), () => postarFacebookStory(storyUrl), "imagem do Story não ficou pronta a tempo"),
-    executar("instagramReels", canais.instagramReels, instagramConfigurado(), Boolean(midias.reel && midias.capa), () => postarReels(reelUrl, capaUrl, legenda, false), "vídeo do Reels não ficou pronto a tempo"),
     executar("facebookReels", canais.facebookReels, facebookConfigurado(), Boolean(midias.reel), () => postarFacebookReels(reelUrl, legenda), "vídeo do Reels não ficou pronto a tempo"),
   ];
   await Promise.all(trabalhos);
