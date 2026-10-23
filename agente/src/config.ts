@@ -33,6 +33,8 @@ export const config = {
   cronColeta: process.env.CRON_COLETA ?? "*/30 6-23 * * *", // a cada 30 min, das 6h às 23h
   notaMinima: Number(process.env.NOTA_MINIMA || 7),
   maxPautasPorRodada: Number(process.env.MAX_PAUTAS_POR_RODADA ?? 8),
+  // Teto de pautas de política nacional por rodada (o foco é Santa Maria).
+  maxNacionaisPorRodada: Number(process.env.MAX_NACIONAIS_POR_RODADA ?? 2),
 
   // Imagens (opcional: sem chave, usa Wikimedia Commons e Openverse)
   pixabayKey: process.env.PIXABAY_API_KEY ?? "",
@@ -71,6 +73,7 @@ export const categorias = [
   "esporte",
   "cultura",
   "clima",
+  "transito",
 ] as const;
 
 export const nomesCategorias: Record<string, string> = {
@@ -83,4 +86,5 @@ export const nomesCategorias: Record<string, string> = {
   esporte: "Esporte",
   cultura: "Cultura",
   clima: "Tempo",
+  transito: "Trânsito",
 };

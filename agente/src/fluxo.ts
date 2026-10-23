@@ -5,6 +5,7 @@ import { config, nomesCategorias } from "./config.js";
 import { lerCanais } from "./canais.js";
 import type { NomeCanal } from "./canais.js";
 import { coletarTudo, type ItemColetado } from "./coletor.js";
+import { fontes } from "./fontes.js";
 import * as db from "./estado.js";
 import { extrairTexto } from "./extrair.js";
 import { ajustar, escolherImagens, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
@@ -93,18 +94,25 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
     if (erros.length) console.warn("Fontes com erro:", erros.join(" | "));
     console.log(`[coleta] ${itens.length} itens, ${novos.length} novos`);
 
-    const avaliacoes = await triar(novos.slice(0, 40), db.titulosRecentes());
+    // Locais primeiro: com as fontes nacionais (G1 Política tem 100 itens) a
+    // janela de 40 deixava Santa Maria de fora. Triagem local é grátis: avalia tudo.
+    const nacionais = new Set(fontes.filter((f) => f.nacional).map((f) => f.nome));
+    const ordenados = [...novos].sort((a, b) => Number(nacionais.has(a.fonte)) - Number(nacionais.has(b.fonte)));
+    const avaliar = config.triagem === "local" ? ordenados : ordenados.slice(0, 40);
+    const avaliacoes = await triar(avaliar, db.titulosRecentes());
     const porId = new Map(avaliacoes.map((a) => [a.id, a]));
 
-    const aprovadas = novos
+    let nacionaisNaRodada = 0;
+    const aprovadas = avaliar
       .map((i) => ({ item: i, t: porId.get(i.id) }))
       .filter((x) => x.t && x.t.relevante && !x.t.repetida && x.t.nota >= config.notaMinima)
       .sort((a, b) => b.t!.nota - a.t!.nota)
+      .filter((x) => !nacionais.has(x.item.fonte) || ++nacionaisNaRodada <= config.maxNacionaisPorRodada)
       .slice(0, config.maxPautasPorRodada);
     const enviar = new Set(aprovadas.map((x) => x.item.id));
 
     // Itens descartados também são guardados, para não serem avaliados de novo.
-    for (const i of novos.slice(0, 40)) {
+    for (const i of avaliar) {
       if (!enviar.has(i.id)) db.registrar(i, "descartado_ia", { triagem: porId.get(i.id) });
     }
 
@@ -318,7 +326,12 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
   db.registrarHistorico(id, "publicada", pub.url);
   if (pub.enviadoAoGitHub) await esperarUrlNoAr(pub.url).catch(() => {});
   const legendaBase = r.rascunho!.legendaInstagram;
-  const legenda = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
+  const comBio = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
+  // Trânsito: pede vídeos e fotos dos seguidores (base para repostar flagras quando o perfil crescer).
+  const legenda =
+    r.rascunho!.categoria === "transito"
+      ? `${comBio}\n\n📲 Viu algo no trânsito de Santa Maria? Mande seu vídeo ou foto por DM.`
+      : comBio;
   const storyUrl = `${config.siteUrl}/imagens/instagram/${pub.slug}-story.jpg`;
   const reelUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.mp4`;
   const capaUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.jpg`;

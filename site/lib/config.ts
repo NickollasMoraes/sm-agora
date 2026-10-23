@@ -40,6 +40,7 @@ export const categorias: Categoria[] = [
   { slug: "esporte", nome: "Esporte", cor: "#16a34a" },
   { slug: "cultura", nome: "Cultura e Lazer", cor: "#db2777" },
   { slug: "clima", nome: "Tempo", cor: "#0284c7" },
+  { slug: "transito", nome: "Trânsito", cor: "#ea580c" },
 ];
 
 export function categoriaPorSlug(slug: string): Categoria {

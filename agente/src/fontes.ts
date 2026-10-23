@@ -10,6 +10,9 @@ export type Fonte = {
   url: string;
   padraoLink?: string; // regex (só para tipo "pagina")
   filtrarLocal?: boolean;
+  // Política nacional: entra no máximo MAX_NACIONAIS_POR_RODADA por coleta,
+  // para não tirar o foco de Santa Maria.
+  nacional?: boolean;
   ativa?: boolean;
 };
 
@@ -39,12 +42,30 @@ export const fontes: Fonte[] = [
     url: "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml",
     filtrarLocal: true,
   },
+  // RS: RBS TV Santa Maria publica no G1 RS (só o que cita a região)
+  { nome: "G1 RS", tipo: "rss", url: "https://g1.globo.com/rss/g1/rs/rio-grande-do-sul/", filtrarLocal: true },
   // Busca do Google Notícias (serve para descobrir pautas; o texto vem da fonte original)
   {
     nome: "Google Notícias",
     tipo: "rss",
     url: "https://news.google.com/rss/search?q=%22Santa+Maria%22+RS+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
   },
+  {
+    nome: "Google Notícias · Trânsito",
+    tipo: "rss",
+    url: "https://news.google.com/rss/search?q=%22Santa+Maria%22+RS+(tr%C3%A2nsito+OR+acidente+OR+rodovia+OR+BR-287+OR+BR-158+OR+BR-392+OR+RSC-287)+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+  },
+  {
+    nome: "Google Notícias · Região Central",
+    tipo: "rss",
+    url: "https://news.google.com/rss/search?q=(%22Regi%C3%A3o+Central%22+OR+Itaara+OR+%22S%C3%A3o+Sep%C3%A9%22+OR+%22Silveira+Martins%22+OR+%22Restinga+S%C3%AAca%22+OR+Formigueiro)+RS+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+  },
+  // Política nacional (fontes públicas ou de referência; limitadas por rodada)
+  { nome: "Agência Brasil · Política", tipo: "rss", url: "https://agenciabrasil.ebc.com.br/rss/politica/feed.xml", nacional: true },
+  { nome: "Agência Senado", tipo: "rss", url: "https://www12.senado.leg.br/noticias/feed/todasnoticias/RSS", nacional: true },
+  { nome: "Agência Câmara", tipo: "rss", url: "https://www.camara.leg.br/noticias/rss/ultimas-noticias", nacional: true },
+  { nome: "G1 Política", tipo: "rss", url: "https://g1.globo.com/rss/g1/politica/", nacional: true },
+  { nome: "Poder360", tipo: "rss", url: "https://www.poder360.com.br/feed/", nacional: true },
 ];
 
 // Termos que indicam que o assunto é de Santa Maria ou região.

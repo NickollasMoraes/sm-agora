@@ -34,6 +34,7 @@ const FONTE_FORTE = "Segoe UI Black, Arial Black, Segoe UI, sans-serif";
 const coresCategoria: Record<string, string> = {
   cidade: "#2563eb", seguranca: "#dc2626", politica: "#7c3aed", educacao: "#0891b2", saude: "#059669",
   economia: "#d97706", esporte: "#16a34a", cultura: "#db2777", clima: "#0284c7",
+  transito: "#ea580c",
 };
 
 export async function fotoDoSite(original: Buffer): Promise<Buffer> {
