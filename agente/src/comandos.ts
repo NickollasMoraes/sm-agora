@@ -6,10 +6,13 @@ import type { NomeCanal } from "./canais.js";
 import * as db from "./estado.js";
 import { ajustarTexto, aprovar, enviarPauta, montarPrevia, postarNosCanais, publicarItem, trocarImagem } from "./fluxo.js";
 import { buscarTema } from "./buscar.js";
+import * as cheerio from "cheerio";
+import { baixarHtml, idDoLink } from "./coletor.js";
+import type { Triagem } from "./ia.js";
 import type { Publicacao } from "./publicar.js";
 
-type Acao = "reenviar-previa" | "publicar" | "repostar" | "rebuscar" | "aprovar" | "aprovar-orientacao" | "descartar" | "outra-imagem" | "ajustar-texto" | "tentar-novamente" | "repostar-falhas";
-type Comando = { id: string; acao: Acao; itemId: string; canais?: string[]; orientacao?: string; criadoEm: string; origem: string };
+type Acao = "pauta-link" | "reenviar-previa" | "publicar" | "repostar" | "rebuscar" | "aprovar" | "aprovar-orientacao" | "descartar" | "outra-imagem" | "ajustar-texto" | "tentar-novamente" | "repostar-falhas";
+type Comando = { id: string; acao: Acao; itemId: string; canais?: string[]; orientacao?: string; categoria?: string; criadoEm: string; origem: string };
 
 const pasta = path.join(config.pastas.dados, "comandos");
 let processando = false;
@@ -73,6 +76,38 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   if (comando.acao === "rebuscar") {
     await buscarTema(comando.itemId, bot);
     return "tema buscado";
+  }
+  // Pauta escolhida pelo Nick a partir de um link: pula a triagem e já redige.
+  if (comando.acao === "pauta-link") {
+    const link = comando.itemId;
+    if (!/^https?:\/\//.test(link)) throw new Error("link inválido");
+    const id = idDoLink(link);
+    if (db.existe(id)) {
+      const atual = db.obter(id);
+      if (["redigindo", "previa", "publicado"].includes(atual.status))
+        throw new Error(`essa matéria já está em "${atual.status}"`);
+    } else {
+      const $ = cheerio.load(await baixarHtml(link));
+      const meta = (nome: string) =>
+        $(`meta[property="${nome}"], meta[name="${nome}"]`).attr("content")?.trim();
+      const titulo = meta("og:title") ?? $("title").text().trim();
+      if (!titulo) throw new Error("não consegui ler o título do link");
+      const fonte = meta("og:site_name") ?? new URL(link).hostname.replace(/^www\./, "");
+      const resumo = meta("og:description") ?? meta("description") ?? "";
+      db.registrar({ id, fonte, titulo, link, resumo, data: new Date().toISOString() }, "pauta", {
+        triagem: {
+          id,
+          relevante: true,
+          repetida: false,
+          nota: 10,
+          categoria: (comando.categoria as Triagem["categoria"]) ?? "politica",
+          resumo: resumo.slice(0, 280),
+        },
+      });
+      db.registrarHistorico(id, "pauta-por-link", link);
+    }
+    await aprovar(bot, id, comando.orientacao);
+    return "pauta criada pelo link; redação iniciada";
   }
   const item = db.obter(comando.itemId);
   if (!item) throw new Error("item inexistente");
