@@ -25,20 +25,29 @@ export function slugUnico(slug: string): string {
 const y = (v: unknown) => JSON.stringify(v);
 
 export type Publicacao = { slug: string; url: string; enviadoAoGitHub: boolean; aviso?: string };
+export type ArquivoExtra = { caminho: string; dados: Buffer };
 
 export async function publicar(
   r: Rascunho,
   foto: Buffer,
   arte: Buffer,
   imagem: ImagemEscolhida | undefined,
+  extras: ArquivoExtra[] = [],
 ): Promise<Publicacao> {
   const slug = slugUnico(r.slug);
   fs.mkdirSync(config.pastas.noticias, { recursive: true });
   fs.mkdirSync(config.pastas.imagens, { recursive: true });
   fs.mkdirSync(config.pastas.artes, { recursive: true });
 
+  limparReelsAntigos();
+
   fs.writeFileSync(path.join(config.pastas.imagens, `${slug}.jpg`), foto);
   fs.writeFileSync(path.join(config.pastas.artes, `${slug}.jpg`), arte);
+  for (const extra of extras) {
+    const destino = path.join(config.pastas.raiz, extra.caminho.replaceAll("__SLUG__", slug));
+    fs.mkdirSync(path.dirname(destino), { recursive: true });
+    fs.writeFileSync(destino, extra.dados);
+  }
 
   const frontmatter = [
     "---",
@@ -67,6 +76,15 @@ export async function publicar(
     return { slug, url, enviadoAoGitHub: true };
   } catch (e) {
     return { slug, url, enviadoAoGitHub: false, aviso: `Falha no git: ${(e as Error).message.slice(0, 300)}` };
+  }
+}
+
+function limparReelsAntigos(): void {
+  if (!fs.existsSync(config.pastas.capasReels)) return;
+  const limite = Date.now() - 24 * 60 * 60_000;
+  for (const nome of fs.readdirSync(config.pastas.capasReels)) {
+    const arquivo = path.join(config.pastas.capasReels, nome);
+    if (fs.statSync(arquivo).mtimeMs < limite) fs.rmSync(arquivo, { force: true });
   }
 }
 

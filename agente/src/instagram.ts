@@ -42,7 +42,7 @@ async function contaId(): Promise<string> {
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function esperarUrlNoAr(url: string, minutos = 10): Promise<void> {
+export async function esperarUrlNoAr(url: string, minutos = 10): Promise<void> {
   const fim = Date.now() + minutos * 60_000;
   while (Date.now() < fim) {
     const r = await fetch(url, { method: "HEAD" }).catch(() => null);

@@ -25,6 +25,14 @@ export type ResultadoCanal = {
   id?: string;
 };
 
+export type Midias = {
+  story?: string;
+  reel?: string;
+  capa?: string;
+  prontoEm?: string;
+  erro?: string;
+};
+
 export type Registro = ItemColetado & {
   status: Status;
   triagem?: Triagem;
@@ -33,6 +41,7 @@ export type Registro = ItemColetado & {
   imagem?: ImagemEscolhida;
   imagensAprovadas?: ImagemEscolhida[]; // fotos que a IA conferiu e aprovou para esta matéria, da melhor para a pior
   tentativaImagem?: number;
+  midias?: Midias;
   mensagens: number[]; // IDs das mensagens do Telegram ligadas a este item
   atualizadoEm: string;
   erro?: string;

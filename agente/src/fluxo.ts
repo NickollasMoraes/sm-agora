@@ -10,8 +10,8 @@ import { extrairTexto } from "./extrair.js";
 import { ajustar, escolherImagens, pesquisarFatos, redigir, triar, type Triagem } from "./ia.js";
 import { baixarImagem, buscarCandidatas } from "./imagens.js";
 import { arteInstagram, arteInstagramStory, camadasReelsMateria, fotoDoSite, fundoSemFoto, urlArte } from "./arte.js";
-import { enviarAoGitHub, publicar } from "./publicar.js";
-import { instagramConfigurado, postarNoInstagram, postarStoriesInstagram } from "./instagram.js";
+import { enviarAoGitHub, publicar, type ArquivoExtra } from "./publicar.js";
+import { esperarUrlNoAr, instagramConfigurado, postarNoInstagram, postarReels, postarStoriesInstagram } from "./instagram.js";
 import { facebookConfigurado, postarFacebookFeed, postarFacebookReels, postarFacebookStory } from "./facebook.js";
 import { postarShort } from "./youtube.js";
 import { publicarReelsPeloSite } from "./reels.js";
@@ -20,6 +20,64 @@ import { videoDaMateria } from "./video.js";
 const h = (s = "") => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const pastaPrevias = path.join(config.pastas.dados, "previas");
 const arquivoPrevia = (id: string, tipo: "foto" | "arte") => path.join(pastaPrevias, `${id}-${tipo}.jpg`);
+const arquivoMidia = (id: string, tipo: "story" | "reel" | "capa") => path.join(pastaPrevias, `${id}-${tipo}.${tipo === "reel" ? "mp4" : "jpg"}`);
+const versoesMidias = new Map<string, number>();
+const tarefasMidias = new Map<string, Promise<void>>();
+
+function iniciarPreparacaoMidias(id: string): void {
+  const versao = (versoesMidias.get(id) ?? 0) + 1;
+  versoesMidias.set(id, versao);
+  for (const tipo of ["story", "reel", "capa"] as const) fs.rmSync(arquivoMidia(id, tipo), { force: true });
+  const tarefa = prepararMidias(id, versao).catch(() => {});
+  tarefasMidias.set(id, tarefa);
+}
+
+async function prepararMidias(id: string, versao: number): Promise<void> {
+  const inicio = Date.now();
+  const r = db.obter(id);
+  const canais = lerCanais().canais;
+  const foto = fs.existsSync(arquivoPrevia(id, "foto")) ? fs.readFileSync(arquivoPrevia(id, "foto")) : null;
+  const credito = r.imagem ? `${r.imagem.autor} / ${r.imagem.acervo}` : undefined;
+  const midias: db.Midias = {};
+  const erros: string[] = [];
+  fs.mkdirSync(pastaPrevias, { recursive: true });
+  const tarefas: Promise<void>[] = [];
+  if (canais.instagramStories || canais.facebookStories) tarefas.push((async () => {
+    const story = await arteInstagramStory(r.imagem ? foto : null, r.rascunho!.tituloArte, r.rascunho!.categoria, credito);
+    if (versoesMidias.get(id) !== versao) return;
+    fs.writeFileSync(arquivoMidia(id, "story"), story);
+    midias.story = arquivoMidia(id, "story");
+    return;
+  })().catch((e) => { erros.push(`Story: ${(e as Error).message}`); }));
+  if (canais.instagramReels || canais.facebookReels || canais.youtubeShorts) tarefas.push((async () => {
+    const camadas = await camadasReelsMateria(r.imagem ? foto : null, r.rascunho!.tituloArte, r.rascunho!.categoria, credito);
+    const video = await videoDaMateria(camadas.fundo, camadas.camada);
+    if (versoesMidias.get(id) !== versao) return;
+    fs.writeFileSync(arquivoMidia(id, "reel"), video);
+    fs.writeFileSync(arquivoMidia(id, "capa"), camadas.capa);
+    midias.reel = arquivoMidia(id, "reel");
+    midias.capa = arquivoMidia(id, "capa");
+    return;
+  })().catch((e) => { erros.push(`Reels: ${(e as Error).message}`); }));
+  await Promise.all(tarefas);
+  if (versoesMidias.get(id) !== versao) return;
+  midias.prontoEm = new Date().toISOString();
+  if (erros.length) midias.erro = erros.join(" | ");
+  db.atualizar(id, { midias });
+  db.registrarHistorico(id, "midias-prontas", `${Math.round((Date.now() - inicio) / 1000)}s${midias.erro ? `; ${midias.erro}` : ""}`);
+  if (midias.erro) db.registrarHistorico(id, "erro", midias.erro);
+}
+
+async function aguardarMidias(id: string, limiteMs: number): Promise<void> {
+  // Robô reiniciado entre a prévia e o Publicar: a tarefa em memória sumiu e as
+  // mídias não existem em disco. Gera de novo (dentro do mesmo limite de espera).
+  const salvas = db.obter(id).midias;
+  const temEmDisco = [salvas?.story, salvas?.reel].some((arquivo) => arquivo && fs.existsSync(arquivo));
+  if (!tarefasMidias.has(id) && !temEmDisco) iniciarPreparacaoMidias(id);
+  const tarefa = tarefasMidias.get(id);
+  if (!tarefa) return;
+  await Promise.race([tarefa, new Promise<void>((resolve) => setTimeout(resolve, limiteMs))]);
+}
 
 let coletando = false;
 
@@ -156,6 +214,7 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   fs.writeFileSync(arquivoPrevia(id, "arte"), arte);
   // Se a foto não baixou, a prévia usa o fundo da marca: sem crédito de foto na matéria.
   db.atualizar(id, { status: "previa", imagem: fotoReal ? imagem : undefined });
+  iniciarPreparacaoMidias(id);
 
   const infoImagem = fotoReal && imagem
     ? `🖼 Imagem: ${h(imagem.autor)} (${h(imagem.licenca)}, <a href="${imagem.fonte}">${imagem.acervo}</a>)`
@@ -201,6 +260,67 @@ export async function ajustarTexto(bot: Bot, id: string, pedido: string): Promis
 // ------------------------------------------------------------ 3. Publicação
 
 export async function publicarItem(bot: Bot, id: string): Promise<void> {
+  const inicio = Date.now();
+  await aguardarMidias(id, 60_000);
+  const r = db.obter(id);
+  const foto = fs.readFileSync(arquivoPrevia(id, "foto"));
+  const arte = fs.readFileSync(arquivoPrevia(id, "arte"));
+  const canais = lerCanais().canais;
+  const midias = r.midias ?? {};
+  const extras: ArquivoExtra[] = [];
+  const adicionar = (origem: string | undefined, destino: string) => {
+    if (origem && fs.existsSync(origem)) extras.push({ caminho: destino, dados: fs.readFileSync(origem) });
+  };
+  const slug = r.rascunho!.slug;
+  adicionar(midias.story, "site/public/imagens/instagram/__SLUG__-story.jpg");
+  adicionar(midias.reel, "site/public/imagens/reels/__SLUG__.mp4");
+  adicionar(midias.capa, "site/public/imagens/reels/__SLUG__.jpg");
+  const pub = canais.site
+    ? await publicar(r.rascunho!, foto, arte, r.imagem, extras)
+    : { slug, url: `${config.siteUrl}/noticia/${slug}/`, enviadoAoGitHub: false, aviso: "canal site desligado" };
+  const resultados: string[] = [canais.site ? (pub.enviadoAoGitHub ? "site: ok" : `site: erro: ${pub.aviso}`) : "site: pulado: desligado"];
+  db.atualizar(id, { status: "publicado", publicacao: pub, canais: { ...(r.canais ?? {}), site: { status: pub.enviadoAoGitHub ? "ok" : "erro", detalhe: pub.aviso, em: new Date().toISOString() } } });
+  db.registrarHistorico(id, "publicada", pub.url);
+  if (pub.enviadoAoGitHub) await esperarUrlNoAr(pub.url).catch(() => {});
+  const legendaBase = r.rascunho!.legendaInstagram;
+  const legenda = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
+  const storyUrl = `${config.siteUrl}/imagens/instagram/${pub.slug}-story.jpg`;
+  const reelUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.mp4`;
+  const capaUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.jpg`;
+  const executar = async (nome: string, ligado: boolean, configurado: boolean, pronto: boolean, acao: () => Promise<unknown>, falta: string) => {
+    if (!ligado) { resultados.push(`${nome}: pulado: desligado`); return; }
+    if (!configurado) { resultados.push(`${nome}: pulado: ${falta}`); return; }
+    if (!pub.enviadoAoGitHub) { resultados.push(`${nome}: erro: matéria não foi publicada`); return; }
+    if (!pronto) { resultados.push(`${nome}: erro: ${falta}`); return; }
+    try { await acao(); resultados.push(`${nome}: ok`); } catch (e) { resultados.push(`${nome}: erro: ${(e as Error).message}`); }
+  };
+  const trabalhos = [
+    executar("instagramFeed", canais.instagramFeed, instagramConfigurado(), true, () => postarNoInstagram(urlArte(pub.slug), legenda), "falta INSTAGRAM_ACCESS_TOKEN"),
+    executar("facebookFeed", canais.facebookFeed, facebookConfigurado(), true, () => postarFacebookFeed(urlArte(pub.slug), `${r.rascunho!.titulo}\n\n${pub.url}`), "falta FACEBOOK_PAGE_TOKEN"),
+    executar("instagramStories", canais.instagramStories, instagramConfigurado(), Boolean(midias.story), () => postarStoriesInstagram(storyUrl), "imagem do Story não ficou pronta a tempo"),
+    executar("facebookStories", canais.facebookStories, facebookConfigurado(), Boolean(midias.story), () => postarFacebookStory(storyUrl), "imagem do Story não ficou pronta a tempo"),
+    executar("instagramReels", canais.instagramReels, instagramConfigurado(), Boolean(midias.reel && midias.capa), () => postarReels(reelUrl, capaUrl, legenda, false), "vídeo do Reels não ficou pronto a tempo"),
+    executar("facebookReels", canais.facebookReels, facebookConfigurado(), Boolean(midias.reel), () => postarFacebookReels(reelUrl, legenda), "vídeo do Reels não ficou pronto a tempo"),
+  ];
+  await Promise.all(trabalhos);
+  if (canais.youtubeShorts) resultados.push(`youtubeShorts: ${await postarShort(midias.reel && fs.existsSync(midias.reel) ? fs.readFileSync(midias.reel) : Buffer.alloc(0), r.rascunho!.tituloArte, legenda)}`);
+  else resultados.push("youtubeShorts: pulado: desligado");
+  const registros: Partial<Record<NomeCanal, db.ResultadoCanal>> = {};
+  for (const resultado of resultados) {
+    const [nome, status, ...resto] = resultado.split(": ");
+    if (!nome || !status || !["ok", "erro", "pulado"].includes(status)) continue;
+    const detalhe = resto.join(": ") || undefined;
+    registros[nome as NomeCanal] = { status: status as "ok" | "erro" | "pulado", detalhe, em: new Date().toISOString() };
+    db.registrarHistorico(id, status === "ok" ? "canal-ok" : status === "erro" ? "canal-erro" : "canal-ok", `${nome}${detalhe ? `: ${detalhe}` : ""}`);
+  }
+  db.atualizar(id, { canais: { ...(db.obter(id).canais ?? {}), ...registros } });
+  db.registrarHistorico(id, "canais-concluidos", `${Math.round((Date.now() - inicio) / 1000)}s`);
+  await bot.api.sendMessage(config.telegramChatId, `✅ Publicado: ${pub.url}\n${pub.enviadoAoGitHub ? "O site atualiza em 1 a 3 minutos." : `⚠️ ${pub.aviso}`}\n\n${resultados.join("\n")}`);
+  fs.rmSync(arquivoPrevia(id, "foto"), { force: true });
+  fs.rmSync(arquivoPrevia(id, "arte"), { force: true });
+}
+
+async function publicarItemAntigo(bot: Bot, id: string): Promise<void> {
   const r = db.obter(id);
   const foto = fs.readFileSync(arquivoPrevia(id, "foto"));
   const arte = fs.readFileSync(arquivoPrevia(id, "arte"));
@@ -311,6 +431,33 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
   fs.rmSync(arquivoPrevia(id, "arte"), { force: true });
 }
 
+async function garantirMidiasNoSite(item: db.Registro, pub: import("./publicar.js").Publicacao): Promise<db.Midias> {
+  const caminhoSite = (tipo: "story" | "reel" | "capa") => path.join(config.pastas.raiz, tipo === "story" ? `site/public/imagens/instagram/${pub.slug}-story.jpg` : `site/public/imagens/reels/${pub.slug}.${tipo === "reel" ? "mp4" : "jpg"}`);
+  const precisa = (tipo: "story" | "reel" | "capa") => !fs.existsSync(caminhoSite(tipo));
+  const localStory = Boolean(item.midias?.story && fs.existsSync(item.midias.story));
+  const localReel = Boolean(item.midias?.reel && fs.existsSync(item.midias.reel));
+  if ((!localStory && precisa("story")) || (!localReel && precisa("reel"))) {
+    iniciarPreparacaoMidias(item.id);
+    await aguardarMidias(item.id, 60_000);
+  }
+  const salvo = db.obter(item.id).midias ?? {};
+  const atual: db.Midias = {
+    ...salvo,
+    story: salvo.story && fs.existsSync(salvo.story) ? salvo.story : fs.existsSync(caminhoSite("story")) ? caminhoSite("story") : undefined,
+    reel: salvo.reel && fs.existsSync(salvo.reel) ? salvo.reel : fs.existsSync(caminhoSite("reel")) ? caminhoSite("reel") : undefined,
+    capa: salvo.capa && fs.existsSync(salvo.capa) ? salvo.capa : fs.existsSync(caminhoSite("capa")) ? caminhoSite("capa") : undefined,
+  };
+  const extras: ArquivoExtra[] = [];
+  const adicionar = (origem: string | undefined, destino: string) => {
+    if (origem && fs.existsSync(origem) && !fs.existsSync(path.join(config.pastas.raiz, destino))) extras.push({ caminho: destino, dados: fs.readFileSync(origem) });
+  };
+  adicionar(atual.story, `site/public/imagens/instagram/${pub.slug}-story.jpg`);
+  adicionar(atual.reel, `site/public/imagens/reels/${pub.slug}.mp4`);
+  adicionar(atual.capa, `site/public/imagens/reels/${pub.slug}.jpg`);
+  if (extras.length) await enviarAoGitHub(extras.map((e) => e.caminho), `Mídias: ${item.rascunho!.titulo}`);
+  return atual;
+}
+
 export async function postarNosCanais(
   bot: Bot,
   item: db.Registro,
@@ -318,6 +465,10 @@ export async function postarNosCanais(
   filtro?: NomeCanal[],
 ): Promise<void> {
   const canais = lerCanais().canais;
+  const midias = await garantirMidiasNoSite(item, pub);
+  const storyUrl = `${config.siteUrl}/imagens/instagram/${pub.slug}-story.jpg`;
+  const reelUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.mp4`;
+  const capaUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.jpg`;
   const deve = (canal: NomeCanal) => !filtro || filtro.includes(canal);
   const legendaBase = item.rascunho!.legendaInstagram;
   const legenda = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
@@ -336,14 +487,24 @@ export async function postarNosCanais(
   }
   if (deve("instagramStories") && canais.instagramStories) {
     if (!instagramConfigurado()) registrar("instagramStories", "pulado", "falta INSTAGRAM_ACCESS_TOKEN");
-    else try { await postarStoriesInstagram(urlArte(pub.slug)); registrar("instagramStories", "ok"); } catch (e) { registrar("instagramStories", "erro", (e as Error).message); }
+    else if (!midias.story && !fs.existsSync(path.join(config.pastas.artes, `${pub.slug}-story.jpg`))) registrar("instagramStories", "erro", "imagem do Story não ficou pronta");
+    else try { await postarStoriesInstagram(storyUrl); registrar("instagramStories", "ok"); } catch (e) { registrar("instagramStories", "erro", (e as Error).message); }
   }
   if (deve("facebookStories") && canais.facebookStories) {
     if (!facebookConfigurado()) registrar("facebookStories", "pulado", "falta FACEBOOK_PAGE_TOKEN");
-    else try { await postarFacebookStory(urlArte(pub.slug)); registrar("facebookStories", "ok"); } catch (e) { registrar("facebookStories", "erro", (e as Error).message); }
+    else if (!midias.story && !fs.existsSync(path.join(config.pastas.artes, `${pub.slug}-story.jpg`))) registrar("facebookStories", "erro", "imagem do Story não ficou pronta");
+    else try { await postarFacebookStory(storyUrl); registrar("facebookStories", "ok"); } catch (e) { registrar("facebookStories", "erro", (e as Error).message); }
   }
-  if (deve("instagramReels")) registrar("instagramReels", "pulado", "repostagem de reels requer nova arte");
-  if (deve("facebookReels")) registrar("facebookReels", "pulado", "repostagem de reels requer nova arte");
+  if (deve("instagramReels")) {
+    if (!canais.instagramReels || !instagramConfigurado()) registrar("instagramReels", "pulado", canais.instagramReels ? "falta INSTAGRAM_ACCESS_TOKEN" : "desligado");
+    else if (!midias.reel || !midias.capa) registrar("instagramReels", "erro", "vídeo do Reels não ficou pronto");
+    else try { await postarReels(reelUrl, capaUrl, legenda, false); registrar("instagramReels", "ok"); } catch (e) { registrar("instagramReels", "erro", (e as Error).message); }
+  }
+  if (deve("facebookReels")) {
+    if (!canais.facebookReels || !facebookConfigurado()) registrar("facebookReels", "pulado", canais.facebookReels ? "falta FACEBOOK_PAGE_TOKEN" : "desligado");
+    else if (!midias.reel) registrar("facebookReels", "erro", "vídeo do Reels não ficou pronto");
+    else try { await postarFacebookReels(reelUrl, legenda); registrar("facebookReels", "ok"); } catch (e) { registrar("facebookReels", "erro", (e as Error).message); }
+  }
   if (deve("youtubeShorts")) registrar("youtubeShorts", "pulado", "repostagem de shorts não implementada");
   db.atualizar(item.id, { canais: { ...(db.obter(item.id).canais ?? {}), ...resultados } });
   await bot.api.sendMessage(config.telegramChatId, `🔁 Repostagem concluída: ${pub.url}`);
