@@ -22,7 +22,7 @@ export async function buscarTema(tema: string, bot: Bot): Promise<number> {
       data: new Date(item.isoDate ?? item.pubDate ?? Date.now()).toISOString(),
     }))
     .filter((item) => !db.existe(item.id));
-  const avaliacoes = await triar(itens.slice(0, 40), db.titulosRecentes());
+  const avaliacoes = await triar(itens.slice(0, 40), db.titulosRecentes(), db.recentesParaTriagem());
   const porId = new Map(avaliacoes.map((avaliacao) => [avaliacao.id, avaliacao]));
   const aprovadas = itens
     .map((item) => ({ item, avaliacao: porId.get(item.id) }))

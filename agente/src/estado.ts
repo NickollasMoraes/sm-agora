@@ -6,6 +6,7 @@ import type { Triagem, Rascunho } from "./ia.js";
 import type { ImagemEscolhida } from "./imagens.js";
 import type { Publicacao } from "./publicar.js";
 import type { NomeCanal } from "./canais.js";
+import { diaLocal, type RecenteTriagem } from "./triagem-local.js";
 
 // Memória do agente num arquivo JSON simples (agente/data/estado.json).
 
@@ -124,6 +125,21 @@ export function registrarHistorico(itemId: string, evento: string, detalhe?: str
 }
 
 // Títulos já vistos recentemente, para a IA reconhecer a mesma história vinda de outra fonte.
+// O que já foi pauta, prévia, publicado ou recusado pelo Nick nas últimas horas,
+// com o título da fonte e o que o robô reescreveu (para achar o mesmo assunto).
+export function recentesParaTriagem(horas = 48): RecenteTriagem[] {
+  const limite = Date.now() - horas * 3600_000;
+  return Object.values(banco.itens)
+    .filter((r) => new Date(r.atualizadoEm).getTime() > limite && r.status !== "descartado_ia")
+    .flatMap((r) => {
+      const categoria = r.rascunho?.categoria ?? r.triagem?.categoria ?? "";
+      const dia = diaLocal(r.data || r.atualizadoEm);
+      return [r.titulo, r.rascunho?.titulo]
+        .filter((t): t is string => Boolean(t))
+        .map((titulo) => ({ titulo, categoria, dia }));
+    });
+}
+
 export function titulosRecentes(horas = 72): string[] {
   const limite = Date.now() - horas * 3600_000;
   return Object.values(banco.itens)

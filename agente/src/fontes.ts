@@ -49,16 +49,22 @@ export const fontes: Fonte[] = [
     nome: "Google Notícias",
     tipo: "rss",
     url: "https://news.google.com/rss/search?q=%22Santa+Maria%22+RS+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    // A busca às vezes traz outras cidades (Vitória da Conquista, RJ): só fica o que cita a região.
+    filtrarLocal: true,
   },
   {
     nome: "Google Notícias · Trânsito",
     tipo: "rss",
     url: "https://news.google.com/rss/search?q=%22Santa+Maria%22+RS+(tr%C3%A2nsito+OR+acidente+OR+rodovia+OR+BR-287+OR+BR-158+OR+BR-392+OR+RSC-287)+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    // A busca às vezes traz outras cidades (Vitória da Conquista, RJ): só fica o que cita a região.
+    filtrarLocal: true,
   },
   {
     nome: "Google Notícias · Região Central",
     tipo: "rss",
     url: "https://news.google.com/rss/search?q=(%22Regi%C3%A3o+Central%22+OR+Itaara+OR+%22S%C3%A3o+Sep%C3%A9%22+OR+%22Silveira+Martins%22+OR+%22Restinga+S%C3%AAca%22+OR+Formigueiro)+RS+when:2d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    // A busca às vezes traz outras cidades (Vitória da Conquista, RJ): só fica o que cita a região.
+    filtrarLocal: true,
   },
   // Política nacional (fontes públicas ou de referência; limitadas por rodada)
   { nome: "Agência Brasil · Política", tipo: "rss", url: "https://agenciabrasil.ebc.com.br/rss/politica/feed.xml", nacional: true },

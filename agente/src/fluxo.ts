@@ -99,7 +99,7 @@ export async function rodarColeta(bot: Bot, avisarSeVazio = false): Promise<void
     const nacionais = new Set(fontes.filter((f) => f.nacional).map((f) => f.nome));
     const ordenados = [...novos].sort((a, b) => Number(nacionais.has(a.fonte)) - Number(nacionais.has(b.fonte)));
     const avaliar = config.triagem === "local" ? ordenados : ordenados.slice(0, 40);
-    const avaliacoes = await triar(avaliar, db.titulosRecentes());
+    const avaliacoes = await triar(avaliar, db.titulosRecentes(), db.recentesParaTriagem());
     const porId = new Map(avaliacoes.map((a) => [a.id, a]));
 
     let nacionaisNaRodada = 0;

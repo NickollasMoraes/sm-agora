@@ -6,7 +6,7 @@ import type { ItemColetado } from "./coletor.js";
 import type { ImagemEscolhida } from "./imagens.js";
 import { perguntarJson, perguntarTexto } from "./claude-code.js";
 import { perguntarJson as perguntarJsonCodex, perguntarTexto as perguntarTextoCodex } from "./codex.js";
-import { triarLocal } from "./triagem-local.js";
+import { triarLocal, type RecenteTriagem } from "./triagem-local.js";
 import fs from "node:fs";
 import path from "node:path";
 import { lerCanais } from "./canais.js";
@@ -54,9 +54,9 @@ Critérios de nota (1 a 10):
 Marque "repetida" quando o assunto for o mesmo de um título já visto, mesmo com palavras diferentes.
 Avalie TODOS os itens recebidos, usando o mesmo id.`;
 
-export async function triar(itens: ItemColetado[], jaVistos: string[]): Promise<Triagem[]> {
+export async function triar(itens: ItemColetado[], jaVistos: string[], recentes: RecenteTriagem[] = []): Promise<Triagem[]> {
   if (itens.length === 0) return [];
-  if (config.triagem === "local") return triarLocal(itens, jaVistos);
+  if (config.triagem === "local") return triarLocal(itens, jaVistos, recentes);
   const lista = itens.map((i) => ({ id: i.id, fonte: i.fonte, titulo: i.titulo, resumo: i.resumo.slice(0, 300) }));
   const conteudo = `Títulos já vistos nas últimas 72h:\n${jaVistos.slice(-150).join("\n") || "(nenhum)"}\n\nItens novos:\n${JSON.stringify(lista, null, 1)}`;
   if (usarCodex()) {

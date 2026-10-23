@@ -1,6 +1,12 @@
 import type { ItemColetado } from "./coletor.js";
 import type { Triagem } from "./ia.js";
 
+export type RecenteTriagem = { titulo: string; categoria: string; dia: string };
+
+// Dia no fuso de Santa Maria (AAAA-MM-DD).
+export const diaLocal = (iso: string) =>
+  new Date(iso).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+
 // Triagem sem IA (custo zero): nota por palavras-chave, peso da fonte e detecção de repetidas.
 
 const palavrasPorCategoria: Record<Triagem["categoria"], string[]> = {
@@ -13,7 +19,7 @@ const palavrasPorCategoria: Record<Triagem["categoria"], string[]> = {
   economia: ["emprego", "vagas", "comércio", "empresa", "investimento", "economia", "preço", "imposto", "iptu", "feira", "inauguração", "negócio"],
   esporte: ["inter-sm", "riograndense", "futebol", "campeonato", "jogo", "atleta", "esporte", "corrida", "gauchão", "divisão de acesso"],
   cultura: ["show", "festival", "teatro", "exposição", "cultura", "música", "cinema", "evento", "festa", "museu", "treze de maio"],
-  clima: ["chuva", "temporal", "frio", "calor", "temperatura", "previsão", "defesa civil", "geada", "alerta", "enchente", "vento"],
+  clima: ["chuva", "temporal", "tempestade", "granizo", "vendaval", "inmet", "frente fria", "umidade", "frio", "calor", "temperatura", "previsão", "defesa civil", "geada", "alerta", "enchente", "alagamento", "vento"],
   cidade: ["obra", "obras", "ônibus", "transporte", "rua", "avenida", "bairro", "água", "corsan", "energia", "rge", "asfalto", "coleta de lixo", "interdição"],
 };
 
@@ -57,21 +63,36 @@ function palavras(titulo: string): Set<string> {
 }
 
 // Similaridade entre dois títulos (0 a 1), para achar a mesma história em fontes diferentes.
-function parecido(a: string, b: string): boolean {
-  const pa = palavras(a);
-  const pb = palavras(b);
-  if (pa.size === 0 || pb.size === 0) return false;
+// Radical simples (5 primeiras letras): "tempestade"/"tempestades", "alertas"/"alerta".
+const radicais = (titulo: string) => new Set([...palavras(titulo)].map((p) => p.slice(0, 5)));
+
+function sobreposicao(a: string, b: string): number {
+  const pa = radicais(a);
+  const pb = radicais(b);
+  if (pa.size === 0 || pb.size === 0) return 0;
   const comuns = [...pa].filter((p) => pb.has(p)).length;
-  return comuns / Math.min(pa.size, pb.size) >= 0.6;
+  return comuns / Math.min(pa.size, pb.size);
 }
+
+function parecido(a: string, b: string): boolean {
+  return sobreposicao(a, b) >= 0.6;
+}
+
+// Virada grave do tempo justifica uma segunda matéria no dia.
+const tempoGrave = /emergencia|desabrigad|desalojad|mort|estrago|enchente|alagament|calamidade/;
 
 // Termo no começo de palavra: "morre" pega "morreu", mas "lula" não pega "celular".
 const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const contem = (texto: string, termos: string[]) =>
-  termos.filter((t) => new RegExp(`(^|[^a-z0-9])${escapar(normalizar(t))}`).test(texto)).length;
+  termos.filter((t) => new RegExp(`(^|[^a-z0-9-])${escapar(normalizar(t))}`).test(texto)).length;
 
-export function triarLocal(itens: ItemColetado[], jaVistos: string[]): Triagem[] {
+export function triarLocal(
+  itens: ItemColetado[],
+  jaVistos: string[],
+  recentes: RecenteTriagem[] = [],
+): Triagem[] {
   const vistos = [...jaVistos];
+  const doDia = [...recentes];
   return itens.map((i) => {
     const texto = normalizar(`${i.titulo} ${i.resumo}`);
 
@@ -91,8 +112,19 @@ export function triarLocal(itens: ItemColetado[], jaVistos: string[]): Triagem[]
     );
     // Outra cidade chamada Santa Maria (DF, RN, Portugal...)
     const outraCidade = /santa maria (\(df\)|do df|- df)|santa maria, df|santa maria \(rn\)/.test(texto);
-    const repetida = vistos.some((v) => parecido(v, i.titulo));
+    // Mesmo assunto no mesmo dia, mesmo vindo de fontes diferentes:
+    // - tempo: uma matéria por dia (outra só se for virada grave e ainda não houver grave);
+    // - demais editorias: mesma editoria + radicais parecidos (régua mais baixa que a geral).
+    const dia = diaLocal(i.data || new Date().toISOString());
+    const mesmoDia = doDia.filter((r) => r.dia === dia && r.categoria === categoria);
+    const grave = tempoGrave.test(texto);
+    const repetidaNoDia =
+      categoria === "clima"
+        ? mesmoDia.length > 0 && !(grave && !mesmoDia.some((r) => tempoGrave.test(normalizar(r.titulo))))
+        : mesmoDia.some((r) => sobreposicao(r.titulo, i.titulo) >= 0.4);
+    const repetida = repetidaNoDia || vistos.some((v) => parecido(v, i.titulo));
     vistos.push(i.titulo);
+    doDia.push({ titulo: i.titulo, categoria, dia });
 
     return {
       id: i.id,
