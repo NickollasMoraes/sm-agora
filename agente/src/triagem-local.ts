@@ -4,7 +4,7 @@ import type { Triagem } from "./ia.js";
 // Triagem sem IA (custo zero): nota por palavras-chave, peso da fonte e detecção de repetidas.
 
 const palavrasPorCategoria: Record<Triagem["categoria"], string[]> = {
-  seguranca: ["polícia", "brigada", "preso", "prisão", "homicídio", "assalto", "roubo", "furto", "tráfico", "acidente", "morte", "morre", "crime", "delegacia", "operação", "apreensão", "balada segura", "bombeiros", "incêndio"],
+  seguranca: ["polícia", "brigada", "preso", "prisão", "homicídio", "assalto", "roubo", "furto", "tráfico", "acidente", "morte", "morre", "crime", "delegacia", "operação", "apreensão", "balada segura", "bombeiros", "incêndio", "tiro", "tiros", "tiroteio", "disparo", "baleado", "perseguição", "esfaqueado", "facada", "assassinado", "assassinato", "foragido", "fuga", "sequestro", "refém", "facção", "violência", "agressão", "flagrante", "arma", "atropelado", "atropelamento", "capotamento", "colisão", "ferido", "feridos", "desaparecido", "golpe", "estelionato"],
   saude: ["saúde", "hospital", "husm", "upa", "vacina", "vacinação", "dengue", "ubs", "posto de saúde", "sus", "médico", "atendimento", "samu"],
   educacao: ["ufsm", "escola", "universidade", "ensino", "aluno", "estudante", "vestibular", "enem", "matrícula", "curso", "professor", "pesquisa", "ufn", "iffar"],
   politica: ["câmara", "vereador", "prefeito", "prefeitura", "eleição", "projeto de lei", "sessão", "secretário", "deputado", "governo"],
@@ -15,8 +15,8 @@ const palavrasPorCategoria: Record<Triagem["categoria"], string[]> = {
   cidade: ["obra", "obras", "trânsito", "ônibus", "transporte", "rua", "avenida", "bairro", "água", "corsan", "energia", "rge", "asfalto", "coleta de lixo", "interdição"],
 };
 
-// Assuntos que afetam muita gente sobem a nota.
-const alto = ["interdição", "falta de água", "sem energia", "paralisação", "greve", "alerta", "temporal", "vacinação", "inscrições", "concurso", "vagas", "transporte coletivo", "ônibus", "morte", "homicídio", "acidente"];
+// Assuntos que afetam muita gente ou dão muita audiência sobem a nota.
+const alto = ["interdição", "falta de água", "sem energia", "paralisação", "greve", "alerta", "temporal", "vacinação", "inscrições", "concurso", "vagas", "transporte coletivo", "ônibus", "morte", "homicídio", "acidente", "tiros", "tiroteio", "baleado", "perseguição", "assassinado", "esfaqueado", "sequestro", "refém", "desaparecido", "explosão", "desabamento", "tragédia", "feridos", "morre", "mortos"];
 // Agenda burocrática ou institucional desce a nota.
 const baixo = ["sessão plenária ordinária", "ata", "edital de", "licitação", "pregão", "convocação", "nota de pesar", "aviso de"];
 
