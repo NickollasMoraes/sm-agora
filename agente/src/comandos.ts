@@ -84,6 +84,24 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
     await ajustarTexto(bot, item.id, comando.orientacao);
     return "texto ajustado";
   }
+  // Matéria já está no site (o erro foi só no registro): nunca publicar de novo,
+  // senão o slugUnico cria uma cópia "-2". Só corrige o estado.
+  const slugNoSite = item.publicacao?.slug ?? item.rascunho?.slug;
+  if (
+    slugNoSite &&
+    fs.existsSync(path.join(config.pastas.noticias, `${slugNoSite}.md`)) &&
+    (comando.acao === "publicar" || comando.acao === "tentar-novamente" || comando.acao === "repostar-falhas") &&
+    item.canais?.site?.status !== "ok"
+  ) {
+    db.atualizar(item.id, {
+      status: "publicado",
+      canais: { ...(item.canais ?? {}), site: { status: "ok", detalhe: "já estava no ar; erro antigo corrigido", em: new Date().toISOString() } },
+    });
+    db.registrarHistorico(item.id, "ja-publicado", "matéria já estava no site; não foi publicada de novo");
+    if (comando.acao !== "repostar-falhas") return "matéria já estava no site; nada foi republicado";
+    const atualizado = db.obter(item.id);
+    if (atualizado) Object.assign(item, atualizado);
+  }
   if (comando.acao === "tentar-novamente") {
     if (item.rascunho) await montarPrevia(bot, item.id);
     else await aprovar(bot, item.id, item.orientacao);
