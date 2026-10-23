@@ -48,8 +48,8 @@ export function Rodape() {
         </div>
       </div>
       <p className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/60">
-        © {new Date().getFullYear()} {site.nome}. Conteúdo produzido com apoio de inteligência artificial e
-        revisado por editor humano. As fontes originais são sempre citadas.
+        © {new Date().getFullYear()} {site.nome}. Jornalismo local de Santa Maria e região. As fontes
+        originais são sempre citadas.
       </p>
     </footer>
   );
