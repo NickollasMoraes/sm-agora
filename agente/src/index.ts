@@ -9,6 +9,40 @@ import { botaoReel, receberVideo, reelPorMensagem, responderReel } from "./reels
 import { buscarTema } from "./buscar.js";
 import { processarComandos } from "./comandos.js";
 import { lerCanais } from "./canais.js";
+import fs from "node:fs";
+import path from "node:path";
+
+// Uma instância só: duas janelas do .bat abertas faziam dois robôs coletarem,
+// postarem em dobro e brigarem no git. A segunda sai e o .bat tenta de novo em 15 s,
+// então ela assume sozinha se a primeira parar.
+const trava = path.join(config.pastas.dados, "robo.lock");
+function vivo(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function pegarTrava(): boolean {
+  try {
+    // "wx" é atômico: se as duas janelas subirem juntas, só uma cria o arquivo.
+    fs.writeFileSync(trava, String(process.pid), { flag: "wx" });
+    return true;
+  } catch {
+    const dono = Number(fs.readFileSync(trava, "utf8"));
+    if (dono && vivo(dono)) return false;
+    fs.rmSync(trava, { force: true }); // trava velha de um robô que já morreu
+    return pegarTrava();
+  }
+}
+if (!pegarTrava()) {
+  console.log("Outro robô já está rodando. Esta janela fica de reserva e tenta de novo em 15 s.");
+  process.exit(0);
+}
+process.on("exit", () => {
+  if (fs.existsSync(trava) && fs.readFileSync(trava, "utf8") === String(process.pid)) fs.rmSync(trava);
+});
 
 const bot = new Bot(config.telegramToken);
 
