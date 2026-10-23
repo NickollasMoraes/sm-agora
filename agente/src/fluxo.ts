@@ -473,6 +473,12 @@ async function garantirMidiasNoSite(item: db.Registro, pub: import("./publicar.j
   adicionar(atual.story, `site/public/imagens/instagram/${pub.slug}-story.jpg`);
   adicionar(atual.reel, `site/public/imagens/reels/${pub.slug}.mp4`);
   adicionar(atual.capa, `site/public/imagens/reels/${pub.slug}.jpg`);
+  // Copia para a pasta do site antes do git add (sem isso o add falhava: "did not match any files").
+  for (const extra of extras) {
+    const destino = path.join(config.pastas.raiz, extra.caminho);
+    fs.mkdirSync(path.dirname(destino), { recursive: true });
+    fs.writeFileSync(destino, extra.dados);
+  }
   if (extras.length) await enviarAoGitHub(extras.map((e) => e.caminho), `Mídias: ${item.rascunho!.titulo}`);
   return atual;
 }
