@@ -35,19 +35,24 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${fonteUi.variable} ${fonteTitulo.variable} ${fonteTexto.variable}`}>
-      <body className="flex min-h-screen flex-col">
-        <Script id="consent-default" strategy="beforeInteractive">
-          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});try{if(localStorage.getItem('sm-agora-consentimento-cookies')==='aceito')gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});}catch(e){}`}
-        </Script>
-        {/* Carregam sempre: o Consent Mode acima decide se usam cookies. Sem isso o robô do AdSense não acha o código. */}
+      <head>
+        {/* Consent Mode primeiro (padrão negado), depois o AdSense como tag literal no <head>:
+            o verificador do AdSense procura exatamente essa tag no HTML; com next/script ela
+            só era injetada por JavaScript e a verificação falhava. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});try{if(localStorage.getItem('sm-agora-consentimento-cookies')==='aceito')gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});}catch(e){}`,
+          }}
+        />
         {site.adsenseClient && (
-          <Script
+          <script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${site.adsenseClient}`}
             crossOrigin="anonymous"
-            strategy="afterInteractive"
           />
         )}
+      </head>
+      <body className="flex min-h-screen flex-col">
         {site.googleAnalytics && (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${site.googleAnalytics}`} strategy="afterInteractive" />
