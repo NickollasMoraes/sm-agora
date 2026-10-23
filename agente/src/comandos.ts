@@ -4,12 +4,12 @@ import { Bot } from "grammy";
 import { config } from "./config.js";
 import type { NomeCanal } from "./canais.js";
 import * as db from "./estado.js";
-import { enviarPauta, montarPrevia, postarNosCanais, publicarItem } from "./fluxo.js";
+import { ajustarTexto, aprovar, enviarPauta, montarPrevia, postarNosCanais, publicarItem, trocarImagem } from "./fluxo.js";
 import { buscarTema } from "./buscar.js";
 import type { Publicacao } from "./publicar.js";
 
-type Acao = "reenviar-previa" | "publicar" | "repostar" | "rebuscar";
-type Comando = { id: string; acao: Acao; itemId: string; canais?: string[]; criadoEm: string; origem: string };
+type Acao = "reenviar-previa" | "publicar" | "repostar" | "rebuscar" | "aprovar" | "aprovar-orientacao" | "descartar" | "outra-imagem" | "ajustar-texto" | "tentar-novamente" | "repostar-falhas";
+type Comando = { id: string; acao: Acao; itemId: string; canais?: string[]; orientacao?: string; criadoEm: string; origem: string };
 
 const pasta = path.join(config.pastas.dados, "comandos");
 let processando = false;
@@ -66,6 +66,29 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   }
   const item = db.obter(comando.itemId);
   if (!item) throw new Error("item inexistente");
+  if (comando.acao === "aprovar" || comando.acao === "aprovar-orientacao") {
+    await aprovar(bot, item.id, comando.orientacao);
+    return "item aprovado; redação iniciada";
+  }
+  if (comando.acao === "descartar") {
+    db.atualizar(item.id, { status: "rejeitado" });
+    db.registrarHistorico(item.id, "descartado", "pelo painel");
+    return "item descartado";
+  }
+  if (comando.acao === "outra-imagem") {
+    await trocarImagem(bot, item.id);
+    return "outra imagem gerada";
+  }
+  if (comando.acao === "ajustar-texto") {
+    if (!comando.orientacao) throw new Error("orientação ausente");
+    await ajustarTexto(bot, item.id, comando.orientacao);
+    return "texto ajustado";
+  }
+  if (comando.acao === "tentar-novamente") {
+    if (item.rascunho) await montarPrevia(bot, item.id);
+    else await aprovar(bot, item.id, item.orientacao);
+    return "tentativa reiniciada";
+  }
   if (comando.acao === "reenviar-previa") {
     if (item.rascunho) {
       await montarPrevia(bot, item.id);
@@ -88,6 +111,10 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   }
   if (item.status !== "publicado") throw new Error("item não está publicado");
   const publicacao = item.publicacao ?? publicacaoAntiga(item);
-  await postarNosCanais(bot, item, publicacao, comando.canais as NomeCanal[] | undefined);
+  const canais = comando.acao === "repostar-falhas"
+    ? (Object.entries(item.canais ?? {}).filter(([, resultado]) => resultado.status === "erro").map(([canal]) => canal) as NomeCanal[])
+    : comando.canais as NomeCanal[] | undefined;
+  if (!canais?.length && comando.acao === "repostar-falhas") throw new Error("não há canais com falha");
+  await postarNosCanais(bot, item, publicacao, canais);
   return "canais repostados";
 }

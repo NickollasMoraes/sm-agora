@@ -75,7 +75,7 @@ export default async function PaginaNoticia({ params }: Params) {
       <h1 className="mt-2 font-serif text-3xl font-extrabold leading-tight sm:text-5xl">{n.titulo}</h1>
       {n.subtitulo && <p className="mt-4 text-xl text-texto-suave">{n.subtitulo}</p>}
       <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-borda py-3 text-sm text-texto-suave">
-        <span>Redação {site.nome}</span>
+        <Link href="/sobre/" className="underline">Redação {site.nome}</Link>
         <time dateTime={n.data}>{formatarDataHora(n.data)}</time>
         {n.atualizado && <span>Atualizado em {formatarDataHora(n.atualizado)}</span>}
         <span>{n.tempoLeitura} min de leitura</span>

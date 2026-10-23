@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { categorias, site } from "@/lib/config";
+import { noticiasDaCategoria } from "@/lib/noticias";
 import { TempoTopo } from "@/components/Tempo";
 
 function dataDeHoje() {
@@ -43,7 +44,7 @@ export function Cabecalho() {
           </Link>
           <nav aria-label="Editorias" className="min-w-0 flex-1">
             <ul className="flex gap-0.5 overflow-x-auto text-[15px] font-semibold [scrollbar-width:none]">
-              {categorias.map((c) => (
+              {categorias.filter((c) => noticiasDaCategoria(c.slug).length > 0).map((c) => (
                 <li key={c.slug}>
                   <Link
                     href={`/categoria/${c.slug}/`}

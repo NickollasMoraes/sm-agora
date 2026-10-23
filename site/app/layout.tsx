@@ -5,6 +5,7 @@ import "./globals.css";
 import { Cabecalho } from "@/components/Cabecalho";
 import { Rodape } from "@/components/Rodape";
 import { caminhoAsset, site } from "@/lib/config";
+import { AvisoCookies } from "@/components/AvisoCookies";
 
 // Títulos: grotesca expressiva. Texto corrido: serifada de leitura. Interface: sans neutra.
 const fonteUi = Public_Sans({ subsets: ["latin"], variable: "--fonte-ui" });
@@ -35,6 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${fonteUi.variable} ${fonteTitulo.variable} ${fonteTexto.variable}`}>
       <body className="flex min-h-screen flex-col">
+        <Script id="consent-default" strategy="beforeInteractive">
+          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});try{if(localStorage.getItem('sm-agora-consentimento-cookies')==='aceito')gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});}catch(e){}`}
+        </Script>
+        {/* Carregam sempre: o Consent Mode acima decide se usam cookies. Sem isso o robô do AdSense não acha o código. */}
         {site.adsenseClient && (
           <Script
             async
@@ -45,12 +50,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
         {site.googleAnalytics && (
           <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${site.googleAnalytics}`}
-              strategy="afterInteractive"
-            />
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${site.googleAnalytics}`} strategy="afterInteractive" />
             <Script id="ga4" strategy="afterInteractive">
-              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${site.googleAnalytics}');`}
+              {`gtag('js',new Date());gtag('config','${site.googleAnalytics}');`}
             </Script>
           </>
         )}
@@ -66,12 +68,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               email: site.email,
               sameAs: [`https://instagram.com/${site.instagram}`, ...(site.whatsappCanal ? [site.whatsappCanal] : [])],
               areaServed: `${site.cidade} - ${site.estado}`,
+              contactPoint: { "@type": "ContactPoint", email: site.email, contactType: "customer service", areaServed: "BR" },
+              publishingPrinciples: `${site.url}/politica-editorial/`,
             }),
           }}
         />
         <Cabecalho />
         <main className="flex-1">{children}</main>
         <Rodape />
+        <AvisoCookies />
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { BotaoCanalWhatsApp } from "@/components/CanalWhatsApp";
 import { categorias, site } from "@/lib/config";
+import { noticiasDaCategoria } from "@/lib/noticias";
+import { PreferenciasCookies } from "@/components/PreferenciasCookies";
 
 export function Rodape() {
   return (
@@ -12,7 +14,7 @@ export function Rodape() {
         <div>
           <p className="mb-2 text-sm font-semibold">Editorias</p>
           <ul className="grid grid-cols-2 gap-1 text-sm text-white/60">
-            {categorias.map((c) => (
+            {categorias.filter((c) => noticiasDaCategoria(c.slug).length > 0).map((c) => (
               <li key={c.slug}>
                 <Link href={`/categoria/${c.slug}/`} className="hover:text-white">
                   {c.nome}
@@ -28,6 +30,9 @@ export function Rodape() {
             <li><Link href="/anuncie/" className="hover:text-white">Anuncie</Link></li>
             <li><Link href="/contato/" className="hover:text-white">Contato e correções</Link></li>
             <li><Link href="/politica-de-privacidade/" className="hover:text-white">Política de privacidade</Link></li>
+            <li><Link href="/termos-de-uso/" className="hover:text-white">Termos de uso</Link></li>
+            <li><Link href="/politica-editorial/" className="hover:text-white">Política editorial</Link></li>
+            <li><PreferenciasCookies /></li>
             <li><a href={`${site.url}/rss.xml`} className="hover:text-white">RSS</a></li>
           </ul>
         </div>

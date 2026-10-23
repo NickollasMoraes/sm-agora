@@ -11,6 +11,7 @@ export const site = {
   estado: "RS",
   email: "nickollasblog@gmail.com",
   emailComercial: "nickollasblog@gmail.com",
+  responsavel: "Nickollas Moraes",
   instagram: "sm.agora",
   whatsappComercial: "5555991727990", // ex.: "5555999999999"
   // Canal de WhatsApp (ex.: "https://whatsapp.com/channel/0029Va..."). Vazio = botões do canal escondidos.

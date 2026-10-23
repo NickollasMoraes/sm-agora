@@ -1,31 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PaginaTexto } from "@/components/PaginaTexto";
-import { site } from "@/lib/config";
+import { categorias, site } from "@/lib/config";
 
-export const metadata: Metadata = { title: "Quem somos" };
+export const metadata: Metadata = { title: "Quem somos", description: `Conheça o ${site.nome}, portal de notícias de ${site.cidade}.` };
 
 export default function Sobre() {
-  return (
-    <PaginaTexto titulo="Quem somos">
-      <p>
-        O {site.nome} é um portal independente de notícias de Santa Maria e região central do Rio Grande do Sul. Nosso
-        objetivo é contar, de forma rápida e clara, o que acontece na cidade e afeta a vida de quem mora aqui.
-      </p>
-      <h2>Como trabalhamos</h2>
-      <p>
-        Acompanhamos fontes oficiais (Prefeitura, Câmara, UFSM, órgãos de segurança) e veículos de imprensa. Usamos
-        ferramentas de inteligência artificial para monitorar essas fontes e apoiar a redação, mas{" "}
-        <strong>toda matéria é aprovada por um editor humano antes de ser publicada</strong>.
-      </p>
-      <ul>
-        <li>Sempre citamos e linkamos a fonte original da informação.</li>
-        <li>Usamos apenas imagens com licença livre, oficiais ou próprias, sempre com crédito.</li>
-        <li>Corrigimos erros de forma transparente, com a data da atualização.</li>
-        <li>Conteúdo patrocinado é sempre identificado como tal.</li>
-      </ul>
-      <p>
-        Contato da redação: <a href={`mailto:${site.email}`}>{site.email}</a>
-      </p>
-    </PaginaTexto>
-  );
+  return <PaginaTexto titulo="Quem somos">
+    <p>O {site.nome} é um portal independente de notícias de {site.cidade} e da região central do Rio Grande do Sul. Nossa missão é informar com rapidez, clareza e contexto sobre os assuntos que afetam a comunidade.</p>
+    <h2>Nossa cobertura</h2><p>Acompanhamos {categorias.map((c) => c.nome).join(", ")}, além de acontecimentos relevantes de Santa Maria e região.</p>
+    <h2>Expediente</h2><p><strong>Editor responsável:</strong> {site.responsavel}<br />Redação: <a href={`mailto:${site.email}`}>{site.email}</a></p>
+    <h2>Como trabalhamos</h2><p>IA monitora fontes e apoia tarefas de redação; todo texto é revisado e aprovado por editor humano. Citamos as fontes originais e usamos imagens livres, oficiais ou próprias, com crédito.</p>
+    <h2>Princípios editoriais</h2><ul><li>Apuração responsável e correção transparente.</li><li>Separação entre jornalismo, opinião e publicidade.</li><li>Respeito às pessoas, à privacidade e ao interesse público.</li><li>Originalidade e indicação das fontes.</li></ul>
+    <p>Conheça nossa <Link href="/politica-editorial/">Política Editorial</Link>, fale com a <Link href="/contato/">redação</Link> ou <Link href="/anuncie/">anuncie</Link> no portal.</p>
+  </PaginaTexto>;
 }
