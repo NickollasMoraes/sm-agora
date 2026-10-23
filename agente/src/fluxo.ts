@@ -183,6 +183,21 @@ export async function aprovar(bot: Bot, id: string, orientacao?: string): Promis
   }
 }
 
+// Mesma foto em tamanhos diferentes (thumb/1920px-...) conta como a mesma.
+const chaveFoto = (url = "") =>
+  decodeURIComponent(url).toLowerCase().replace(/\/thumb\//, "/").replace(/\/\d+px-[^/]*$/, "").replace(/[?#].*$/, "");
+
+// Fotos já usadas por matérias publicadas ou em prévia (exceto a própria).
+function fotosUsadas(idAtual: string): Set<string> {
+  const usadas = new Set<string>();
+  for (const item of db.porStatus("publicado", "previa")) {
+    if (item.id === idAtual || !item.imagem) continue;
+    usadas.add(chaveFoto(item.imagem.fonte));
+    usadas.add(chaveFoto(item.imagem.url));
+  }
+  return usadas;
+}
+
 export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   const r = db.obter(id);
   const rascunho = r.rascunho!;
@@ -196,7 +211,11 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
     aprovadas = await escolherImagens(rascunho, candidatas).catch(() => []);
     db.atualizar(id, { imagensAprovadas: aprovadas });
   }
-  const imagem = aprovadas[tentativa];
+  // Nunca repetir foto: o acervo de Santa Maria é pequeno e a mesma foto boa
+  // vencia sempre (a entrada da UFSM saiu em 4 matérias). Sem foto inédita,
+  // entra o fundo da editoria.
+  const usadas = fotosUsadas(id);
+  const imagem = aprovadas.filter((i) => !usadas.has(chaveFoto(i.fonte)) && !usadas.has(chaveFoto(i.url)))[tentativa];
   let fotoReal: Buffer | null = null;
   if (imagem) {
     try {
