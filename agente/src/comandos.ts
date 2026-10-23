@@ -28,7 +28,17 @@ export async function processarComandos(bot: Bot): Promise<void> {
     const arquivos = fs.existsSync(pasta) ? fs.readdirSync(pasta).filter((nome) => nome.endsWith(".json")) : [];
     const arquivo = arquivos.sort()[0];
     if (!arquivo) return;
-    const caminho = path.join(pasta, arquivo);
+    // Tira o comando da fila ANTES de executar: redigir leva minutos e, com o
+    // arquivo ainda na fila, cada rodada (10 s) mandava redigir de novo.
+    // O rename é atômico: se houver outro robô, só um consegue pegar.
+    const emAndamento = path.join(pasta, "processando");
+    fs.mkdirSync(emAndamento, { recursive: true });
+    const caminho = path.join(emAndamento, arquivo);
+    try {
+      fs.renameSync(path.join(pasta, arquivo), caminho);
+    } catch {
+      return; // outro robô pegou
+    }
     let comando: Partial<Comando> = {};
     try {
       comando = JSON.parse(fs.readFileSync(caminho, "utf8")) as Partial<Comando>;
@@ -67,6 +77,9 @@ async function executar(bot: Bot, comando: Partial<Comando>): Promise<string> {
   const item = db.obter(comando.itemId);
   if (!item) throw new Error("item inexistente");
   if (comando.acao === "aprovar" || comando.acao === "aprovar-orientacao") {
+    if (item.status === "redigindo" || item.status === "previa" || item.status === "publicado") {
+      throw new Error(`item já está em "${item.status}"; não foi redigido de novo`);
+    }
     await aprovar(bot, item.id, comando.orientacao);
     return "item aprovado; redação iniciada";
   }
