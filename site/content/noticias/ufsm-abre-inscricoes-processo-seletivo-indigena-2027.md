@@ -6,7 +6,7 @@ tags: ["ufsm","processo-seletivo-indigena","vestibular","ensino-superior","povos
 data: 2026-10-21T14:55:28.569Z
 imagem: "/imagens/noticias/ufsm-abre-inscricoes-processo-seletivo-indigena-2027.jpg"
 imagemAlt: "Estudantes fazendo prova em uma sala de aula"
-credito: {"autor":"Imagens SM / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:Entrada_da_UFSM.jpg"}
+credito: {"autor":"Lucas Cenir Friederich / Wikimedia Commons","licenca":"CC BY 4.0","fonte":"https://commons.wikimedia.org/wiki/File:Biblioteca_Central_da_UFSM.jpg"}
 fontes: [{"nome":"UFSM – Abertas as inscrições para o Processo Seletivo Indígena UFSM 2027","url":"https://www.ufsm.br/2026/10/19/abertas-as-inscricoes-para-o-processo-seletivo-indigena-ufsm-2027"},{"nome":"Prograd/UFSM – Seguem até 17 de novembro as inscrições para o Processo Seletivo Indígena UFSM 2027","url":"https://www.ufsm.br/pro-reitorias/prograd/2026/10/21/seguem-ate-17-de-novembro-as-inscricoes-para-o-processo-seletivo-indigena-ufsm-2027"},{"nome":"Prograd/UFSM – Edital 071/2026","url":"https://www.ufsm.br/pro-reitorias/prograd/editais/071-2026"},{"nome":"Edital 071/2026 (PDF)","url":"https://www.ufsm.br/app/uploads/sites/342/2026/10/Edital-Indigena-2027-3.pdf"}]
 ---
 

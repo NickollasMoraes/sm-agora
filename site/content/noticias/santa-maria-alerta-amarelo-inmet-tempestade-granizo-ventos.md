@@ -6,7 +6,7 @@ tags: ["inmet","alerta-amarelo","tempestade","granizo","defesa-civil","previsao-
 data: 2026-10-22T19:17:18.108Z
 imagem: "/imagens/noticias/santa-maria-alerta-amarelo-inmet-tempestade-granizo-ventos.jpg"
 imagemAlt: "Céu coberto por nuvens escuras e carregadas, que indicam a chegada de uma tempestade"
-credito: {"autor":"jplenio / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/c%C3%A9u-nuvens-atmosfera-clima-ar-4237062/"}
+credito: {"autor":"Felix-Mittermeier / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/c%C3%A9u-nuvens-clima-c%C3%BAmulos-3499982/"}
 fontes: [{"nome":"O Tempo – alerta amarelo para 22/10 (publicado em 21/10/2026)","url":"https://www.otempo.com.br/tempo/2026/10/21/tempestade-com-ventos-de-ate-60-km-h-e-granizo-poe-santa-maria-rs-em-alerta-amarelo-do-inmet"},{"nome":"O Tempo – alerta amarelo para 24/10 (publicado em 22/10/2026)","url":"https://www.otempo.com.br/tempo/2026/10/22/alerta-amarelo-santa-maria-rs-entra-em-tempestade-com-50-mm-de-chuva-e-ventos-de-60-km-h-diz-inmet"},{"nome":"O Tempo – alerta amarelo para 23/10 (publicado em 20/10/2026)","url":"https://www.otempo.com.br/tempo/2026/10/20/alerta-amarelo-para-tempestade-em-santa-maria-ventos-de-60-km-h-e-granizo-no-rs-diz-inmet"},{"nome":"Inmet – Alertas","url":"https://alertas2.inmet.gov.br"}]
 ---
 

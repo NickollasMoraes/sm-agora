@@ -101,14 +101,23 @@ export default async function PaginaNoticia({ params }: Params) {
 
       <figure className="mt-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={caminhoAsset(n.imagem)} alt={n.imagemAlt} className="w-full rounded-lg object-cover" />
+        <div className="relative">
+          <img src={caminhoAsset(n.imagem)} alt={n.imagemAlt} className="w-full rounded-lg object-cover" />
+          {n.imagemIlustrativa && (
+            <span className="absolute bottom-2 left-2 rounded bg-black/70 px-2 py-1 text-xs font-semibold text-white">Imagem meramente ilustrativa</span>
+          )}
+        </div>
         {n.credito && (
           <figcaption className="mt-2 text-xs text-texto-suave">
-            {n.imagemAlt} · Foto:{" "}
-            <a href={n.credito.fonte} target="_blank" rel="noopener" className="underline">
-              {n.credito.autor}
-            </a>{" "}
-            ({n.credito.licenca})
+            {n.imagemIlustrativa ? (
+              `${n.imagemAlt} · Imagem meramente ilustrativa`
+            ) : (
+              <>
+                {`${n.imagemAlt} · Foto: `}
+                {n.credito.fonte ? <a href={n.credito.fonte} target="_blank" rel="noopener" className="underline">{n.credito.autor}</a> : n.credito.autor}
+                {` (${n.credito.licenca})`}
+              </>
+            )}
           </figcaption>
         )}
       </figure>

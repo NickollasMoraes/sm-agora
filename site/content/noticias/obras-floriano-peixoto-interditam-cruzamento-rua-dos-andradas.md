@@ -5,7 +5,8 @@ categoria: cidade
 tags: ["transito","obras","floriano-peixoto","centro","drenagem","pavimentacao"]
 data: 2026-10-19T13:32:43.792Z
 imagem: "/imagens/noticias/obras-floriano-peixoto-interditam-cruzamento-rua-dos-andradas.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Rua interditada para obras de pavimentação, com máquinas, trabalhadores e cones de sinalização no asfalto"
+credito: {"autor":"Ri_Ya / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/sapatos-guindastes-edif%C3%ADcios-4520595/"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/geral/obras-na-floriano-peixoto-interditam-cruzamento-com-a-rua-dos-andradas-veja-os-outros-bloqueios-previstos-para-esta-semana.30899143"}]
 ---
 

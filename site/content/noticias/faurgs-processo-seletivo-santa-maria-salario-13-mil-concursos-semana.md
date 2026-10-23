@@ -6,7 +6,7 @@ tags: ["concursos","processo-seletivo","faurgs","emprego","santa-maria","rio-gra
 data: 2026-10-19T21:49:23.315Z
 imagem: "/imagens/noticias/faurgs-processo-seletivo-santa-maria-salario-13-mil-concursos-semana.jpg"
 imagemAlt: "Pessoa preenche à caneta um formulário de inscrição sobre uma mesa"
-credito: {"autor":"CLUBE TREKKING SANTA MARIA RS BRASIL / Wikimedia Commons","licenca":"CC BY 2.0","fonte":"https://commons.wikimedia.org/wiki/File:Vista_de_Santa_Maria_(RS).jpg"}
+credito: {"autor":"amtec_photos / Wikimedia Commons","licenca":"CC BY-SA 2.0","fonte":"https://commons.wikimedia.org/wiki/File:Woman_Filling_Out_a_Job_Application_-_38856854561.jpg"}
 fontes: [{"nome":"Ache Concursos – 35 concursos abrem inscrições na semana de 19/10 com vagas de R$ 35 mil","url":"https://www.acheconcursos.com.br/noticias/35-concursos-abrem-inscricoes-na-semana-de-19-10-com-vagas-de-r-35-mil-94055"}]
 ---
 

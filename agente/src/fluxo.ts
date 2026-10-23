@@ -16,6 +16,7 @@ import { facebookConfigurado, postarFacebookFeed, postarFacebookReels, postarFac
 import { postarShort } from "./youtube.js";
 import { publicarReelsPeloSite } from "./reels.js";
 import { videoDaMateria } from "./video.js";
+import { gerarIlustracao } from "./ilustracao.js";
 
 const h = (s = "") => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const pastaPrevias = path.join(config.pastas.dados, "previas");
@@ -215,7 +216,9 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   // vencia sempre (a entrada da UFSM saiu em 4 matérias). Sem foto inédita,
   // entra o fundo da editoria.
   const usadas = fotosUsadas(id);
-  const imagem = aprovadas.filter((i) => !usadas.has(chaveFoto(i.fonte)) && !usadas.has(chaveFoto(i.url)))[tentativa];
+  const imagem = r.imagem?.ilustrativa
+    ? undefined
+    : aprovadas.filter((i) => !usadas.has(chaveFoto(i.fonte)) && !usadas.has(chaveFoto(i.url)))[tentativa];
   let fotoReal: Buffer | null = null;
   if (imagem) {
     try {
@@ -224,18 +227,31 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
       fotoReal = null;
     }
   }
-  const foto = fotoReal ?? (await fundoSemFoto(rascunho.categoria));
+  let ilustracao: Buffer | null = null;
+  if (!fotoReal) {
+    try {
+      ilustracao = await gerarIlustracao(rascunho);
+    } catch (e) {
+      console.warn(`[imagem] ilustração falhou; usando fundo da editoria: ${(e as Error).message}`);
+    }
+  }
+  const imagemEscolhida = ilustracao
+    ? { url: "", autor: "Imagem meramente ilustrativa", licenca: "Ilustração", fonte: "", acervo: "Ilustração" as const, ilustrativa: true }
+    : fotoReal && imagem ? imagem : undefined;
+  const foto = fotoReal ?? ilustracao ?? (await fundoSemFoto(rascunho.categoria));
   const credito = fotoReal && imagem ? `${imagem.autor} / ${imagem.acervo}` : undefined;
-  const arte = await arteInstagram(fotoReal, rascunho.tituloArte, rascunho.categoria, credito);
+  const arte = await arteInstagram(fotoReal ?? ilustracao, rascunho.tituloArte, rascunho.categoria, credito);
 
   fs.mkdirSync(pastaPrevias, { recursive: true });
   fs.writeFileSync(arquivoPrevia(id, "foto"), foto);
   fs.writeFileSync(arquivoPrevia(id, "arte"), arte);
   // Se a foto não baixou, a prévia usa o fundo da marca: sem crédito de foto na matéria.
-  db.atualizar(id, { status: "previa", imagem: fotoReal ? imagem : undefined });
+  db.atualizar(id, { status: "previa", imagem: imagemEscolhida });
   iniciarPreparacaoMidias(id);
 
-  const infoImagem = fotoReal && imagem
+  const infoImagem = imagemEscolhida?.ilustrativa
+    ? "🖼 Imagem meramente ilustrativa (gerada)"
+    : fotoReal && imagem
     ? `🖼 Imagem: ${h(imagem.autor)} (${h(imagem.licenca)}, <a href="${imagem.fonte}">${imagem.acervo}</a>)`
     : "🖼 Sem foto livre adequada: usando fundo da editoria.";
   const legenda =

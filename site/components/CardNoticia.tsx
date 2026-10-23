@@ -15,11 +15,14 @@ type Props = { noticia: Noticia; variante?: "grande" | "padrao" | "compacto" };
 
 export function CardNoticia({ noticia, variante = "padrao" }: Props) {
   const link = `/noticia/${noticia.slug}/`;
+  const seloImagem = noticia.imagemIlustrativa && (
+    <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">Ilustrativa</span>
+  );
 
   if (variante === "compacto") {
     return (
       <article className="flex gap-3 border-b border-borda py-3 last:border-0">
-        <Link href={link} className="shrink-0">
+        <Link href={link} className="relative block shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={caminhoAsset(noticia.imagem)}
@@ -27,6 +30,7 @@ export function CardNoticia({ noticia, variante = "padrao" }: Props) {
             loading="lazy"
             className="h-16 w-24 rounded object-cover"
           />
+          {seloImagem}
         </Link>
         <div>
           <Selo categoria={noticia.categoria} />
@@ -43,7 +47,7 @@ export function CardNoticia({ noticia, variante = "padrao" }: Props) {
   const grande = variante === "grande";
   return (
     <article className="group">
-      <Link href={link} className="block overflow-hidden rounded-sm bg-fundo-suave">        {/* eslint-disable-next-line @next/next/no-img-element */}
+      <Link href={link} className="relative block overflow-hidden rounded-sm bg-fundo-suave">        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={caminhoAsset(noticia.imagem)}
           alt={noticia.imagemAlt}
@@ -52,6 +56,7 @@ export function CardNoticia({ noticia, variante = "padrao" }: Props) {
             grande ? "aspect-[16/9]" : "aspect-[3/2]"
           }`}
         />
+        {seloImagem}
       </Link>
       <div className="mt-3">
         <Selo categoria={noticia.categoria} />

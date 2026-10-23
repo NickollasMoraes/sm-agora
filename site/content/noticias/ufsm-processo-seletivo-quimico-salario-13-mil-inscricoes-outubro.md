@@ -6,7 +6,7 @@ tags: ["ufsm","processo-seletivo","emprego","quimica","faurgs"]
 data: 2026-10-20T09:01:04.180Z
 imagem: "/imagens/noticias/ufsm-processo-seletivo-quimico-salario-13-mil-inscricoes-outubro.jpg"
 imagemAlt: "Bancada de laboratório de química com tubos de ensaio e vidrarias"
-credito: {"autor":"Imagens SM / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:Entrada_da_UFSM.jpg"}
+credito: {"autor":"jarmoluk / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/laborat%C3%B3rio-an%C3%A1lise-qu%C3%ADmica-2815641/"}
 fontes: [{"nome":"Folha Dirigida/Qconcursos","url":"https://folha.qconcursos.com/n/universidade-federal-de-santa-maria-abre-processo-seletivo-para-quimico"},{"nome":"Concursos SC","url":"https://concursossc.com.br/ufsm-abre-processo-seletivo-para-quimico-com-salario-de-r-137-mil/"},{"nome":"Atlas Público","url":"https://atlaspublico.com.br/concursos/rs/universidade-federal-de-santa-maria-2840"}]
 ---
 

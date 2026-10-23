@@ -5,7 +5,8 @@ categoria: esporte
 tags: ["rustica-da-medianeira","corrida-de-rua","romaria-da-medianeira","caminhada","santa-maria"]
 data: 2026-10-19T14:50:53.826Z
 imagem: "/imagens/noticias/rustica-da-medianeira-abre-lote-extra-de-150-vagas.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Grupo de corredores com número de peito participa de uma corrida de rua em uma avenida"
+credito: {"autor":"Imagens SM / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:Bas%C3%ADlica_de_Nossa_Senhora_Medianeira.jpg"}
 fontes: [{"nome":"Prefeitura de Santa Maria – 4ª Rústica da Medianeira está com lote extra de 150 vagas para corrida e caminhada","url":"https://www.santamaria.rs.gov.br/noticias/31285-4a--rustica-da-medianeira-esta-com-lote-extra-de-150-vagas-para-corrida-e-caminhada"},{"nome":"Prefeitura de Santa Maria – Calendário de Eventos 2026 (PDF)","url":"https://www.santamaria.rs.gov.br/arquivos/baixar-arquivo/conteudo/D19-4362.pdf"},{"nome":"Diário de Santa Maria – Rústica da Medianeira reúne 700 atletas em Santa Maria","url":"https://diariosm.com.br/noticias/geral/rustica-da-medianeira-reune-700-atletas-em-santa-maria-confira-os-vencedores.15436964"}]
 ---
 

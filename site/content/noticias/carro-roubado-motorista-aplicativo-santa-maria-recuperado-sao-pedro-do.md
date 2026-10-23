@@ -5,7 +5,8 @@ categoria: seguranca
 tags: ["roubo-de-veiculo","motorista-de-aplicativo","brigada-militar","receptacao","sao-pedro-do-sul","km-tres"]
 data: 2026-10-19T12:28:03.656Z
 imagem: "/imagens/noticias/carro-roubado-motorista-aplicativo-santa-maria-recuperado-sao-pedro-do.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Carro roubado de motorista de aplicativo em Santa Maria é recuperado em São Pedro do Sul"
+credito: {"autor":"MediaPhoto.Org / Wikimedia Commons","licenca":"CC BY 3.0","fonte":"https://commons.wikimedia.org/wiki/File:Car_keys_with_keychain.jpg"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/policia-seguranca/policia-recupera-carro-roubado-de-motorista-de-aplicativo-em-santa-maria-dois-jovens-sao-presos.30899139"}]
 ---
 

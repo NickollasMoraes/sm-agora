@@ -9,7 +9,7 @@ import { marked } from "marked";
 export type CreditoImagem = {
   autor: string;
   licenca: string;
-  fonte: string; // URL da página de origem da imagem
+  fonte?: string; // URL da página de origem da imagem
 };
 
 export type Noticia = {
@@ -23,6 +23,7 @@ export type Noticia = {
   imagem: string;
   imagemAlt: string;
   credito?: CreditoImagem;
+  imagemIlustrativa?: boolean;
   fontes: { nome: string; url: string }[];
   destaque: boolean;
   html: string;
@@ -46,6 +47,7 @@ function lerArquivo(arquivo: string): Noticia {
     imagem: data.imagem ?? `/imagens/padrao/${data.categoria ?? "cidade"}.svg`,
     imagemAlt: data.imagemAlt ?? data.titulo,
     credito: data.credito,
+    imagemIlustrativa: Boolean(data.imagemIlustrativa),
     fontes: data.fontes ?? [],
     destaque: Boolean(data.destaque),
     html: marked.parse(content, { async: false }) as string,

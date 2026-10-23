@@ -5,7 +5,8 @@ categoria: esporte
 tags: ["ufsm","atletismo","jif-2026","ana-luiza-ramos","santa-maria"]
 data: 2026-10-22T22:01:44.609Z
 imagem: "/imagens/noticias/atleta-ufsm-conquista-ouro-salto-em-altura-jif-2026.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Atleta de atletismo executa salto em altura em uma pista esportiva durante uma competição."
+credito: {"autor":"Universidade Federal de Santa Maria / Wikimedia Commons","licenca":"Public domain","fonte":"https://commons.wikimedia.org/wiki/File:Brasao_UFSM_Color_300dpi.jpg"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/esportes/atleta-da-ufsm-garante-ouro-nos-jogos-das-instituicoes-federais-2026.30899306"}]
 ---
 

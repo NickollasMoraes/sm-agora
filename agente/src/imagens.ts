@@ -8,8 +8,9 @@ export type ImagemEscolhida = {
   autor: string;
   licenca: string;
   fonte: string; // página de origem (para o crédito)
-  acervo: "Wikimedia Commons" | "Openverse" | "Pixabay" | "Pexels";
+  acervo: "Wikimedia Commons" | "Openverse" | "Pixabay" | "Pexels" | "Ilustração";
   descricao?: string; // título, descrição e etiquetas do acervo, para conferir se a foto combina com a matéria
+  ilustrativa?: boolean;
 };
 
 // Licenças aceitas no Wikimedia Commons. "NC" (não comercial) e "ND" ficam de fora: o site tem anúncios.

@@ -5,8 +5,9 @@ categoria: saude
 tags: ["ufsm","varicela","vacinacao","catapora","saude-publica","ubs"]
 data: 2026-10-21T23:13:38.200Z
 imagem: "/imagens/noticias/varicela-ufsm-ccsh-fase-laranja-locais-vacinacao-santa-maria.jpg"
-imagemAlt: "Profissional de saúde aplica vacina no braço de uma pessoa, com a carteira de vacinação sobre a mesa"
-credito: {"autor":"Imagens SM / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:Entrada_da_UFSM.jpg"}
+imagemAlt: "Frasco de vacina e seringa sobre mesa de posto de saúde, com fundo desfocado"
+credito: {"autor":"Imagem meramente ilustrativa","licenca":"Ilustração"}
+imagemIlustrativa: true
 fontes: [{"nome":"UFSM/CCSH – Confira locais de vacinação em Santa Maria e mantenha sua carteira em dia","url":"https://www.ufsm.br/unidades-universitarias/ccsh/2026/10/21/confira-locais-de-vacinacao-em-santa-maria-e-mantenha-sua-carteira-em-dia"}]
 ---
 

@@ -59,8 +59,9 @@ export async function publicar(
     `imagem: ${y(`/imagens/noticias/${slug}.jpg`)}`,
     `imagemAlt: ${y(imagem ? r.descricaoImagem : config.siteNome)}`,
     imagem
-      ? `credito: ${y({ autor: `${imagem.autor} / ${imagem.acervo}`, licenca: imagem.licenca, fonte: imagem.fonte })}`
+      ? `credito: ${y(imagem.ilustrativa ? { autor: "Imagem meramente ilustrativa", licenca: "Ilustração" } : { autor: `${imagem.autor} / ${imagem.acervo}`, licenca: imagem.licenca, fonte: imagem.fonte })}`
       : "",
+    imagem?.ilustrativa ? "imagemIlustrativa: true" : "",
     `fontes: ${y(r.fontes)}`,
     "---",
   ]

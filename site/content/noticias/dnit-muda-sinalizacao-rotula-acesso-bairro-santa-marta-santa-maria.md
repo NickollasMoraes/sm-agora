@@ -5,7 +5,8 @@ categoria: cidade
 tags: ["transito","dnit","br-158","santa-marta","sinalizacao","santa-maria"]
 data: 2026-10-19T18:53:31.608Z
 imagem: "/imagens/noticias/dnit-muda-sinalizacao-rotula-acesso-bairro-santa-marta-santa-maria.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Placa de \"PARE\" à beira de uma rotatória, com carros circulando ao fundo"
+credito: {"autor":"knerri61 / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/pare-assinar-sinal-de-tr%C3%A2nsito-634941/"}
 fontes: [{"nome":"Alcir 61","url":"https://alcir61.net/dnit-alerta-para-mudancas-na-sinalizacao-da-rotula-de-acesso-ao-bairro-santa-marta-na-br-158-rs-em-santa-maria/"},{"nome":"Santa Maria 24 Horas","url":"https://santamaria24horas.com.br/2026/09/25/dnit-altera-circulacao-em-rotula-do-viaduto-na-br-158-em-santa-maria/"},{"nome":"O Sepeense","url":"https://osepeense.com/alerta-no-transito-mudanca-na-sinalizacao-da-rotula-da-br-158-rs-em-santa-maria-nesta-sexta-25/"},{"nome":"DNIT (gov.br)","url":"https://www.gov.br/dnit/pt-br/central-de-conteudos/noticias-alerta-de-servicos/dnit-alerta-para-bloqueios-na-rotatoria-do-viaduto-da-br-158-rs-em-santa-maria-neste-sabado-28-e-domingo-29"}]
 ---
 

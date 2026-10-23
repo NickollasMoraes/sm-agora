@@ -5,7 +5,8 @@ categoria: seguranca
 tags: ["acidente-de-transito","faixa-nova-de-camobi","santa-maria","transito","rsc-287"]
 data: 2026-10-22T22:01:55.735Z
 imagem: "/imagens/noticias/acidente-gol-s10-congestionamento-faixa-nova-camobi-santa-maria.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Congestionamento na Faixa Nova de Camobi, em Santa Maria, após uma colisão entre um carro e uma caminhonete."
+credito: {"autor":"csliaw / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/ruas-noite-luzes-c%C3%ADrculo-rodovias-2278471/"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/policia-seguranca/acidente-entre-carro-e-caminhonete-provoca-congestionamento-na-faixa-nova-de-camobi-em-santa-maria.30899307"}]
 ---
 

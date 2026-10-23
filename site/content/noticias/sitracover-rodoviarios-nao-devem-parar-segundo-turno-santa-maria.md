@@ -6,7 +6,7 @@ tags: ["transporte-coletivo","sitracover","atu","eleicoes-2026","onibus","santa-
 data: 2026-10-21T00:57:07.281Z
 imagem: "/imagens/noticias/sitracover-rodoviarios-nao-devem-parar-segundo-turno-santa-maria.jpg"
 imagemAlt: "Ônibus do transporte coletivo urbano parado em uma rua da cidade"
-credito: {"autor":"Palma Santa Maria / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:%C3%94nibus_do_Sistema_Integrado_Municipal_(SIM)_na_RSC-287_em_Palma,_Santa_Maria.JPG_-_panoramio.jpg"}
+credito: {"autor":"Palma Santa Maria / Wikimedia Commons","licenca":"CC BY-SA 3.0","fonte":"https://commons.wikimedia.org/wiki/File:%C3%94nibus_da_empresa_Salgado_Filho_Transportes_chegando_do_Centro,_manobrando_para_ir_%C3%A0_Linha_Sete.JPG_-_panoramio.jpg"}
 fontes: [{"nome":"Diário de Santa Maria – Sitracover diz que trabalhadores do transporte coletivo não devem paralisar no domingo de eleição","url":"https://diariosm.com.br/noticias/geral/sitracover-diz-que-trabalhadores-do-transporte-coletivo-nao-devem-paralisar-no-domingo-de-eleicao-vale-alimentacao-atrasado-sera-pago-na-segunda.30899230"},{"nome":"Diário de Santa Maria – Transporte coletivo pode ter 50% da frota disponível no domingo de eleição em Santa Maria, afirma ATU","url":"https://diariosm.com.br/noticias/geral/transporte-coletivo-pode-ter-50-da-frota-disponivel-no-domingo-de-eleicao-em-santa-maria-afirma-atu.30899224"}]
 ---
 

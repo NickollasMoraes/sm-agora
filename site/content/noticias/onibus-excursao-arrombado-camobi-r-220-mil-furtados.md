@@ -5,7 +5,8 @@ categoria: seguranca
 tags: ["furto","camobi","faixa-nova","policia-civil","turismo"]
 data: 2026-10-20T12:44:33.442Z
 imagem: "/imagens/noticias/onibus-excursao-arrombado-camobi-r-220-mil-furtados.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Ônibus de turismo estacionado no pátio de um estabelecimento à beira de uma rodovia"
+credito: {"autor":"Tysto / Wikimedia Commons","licenca":"Public domain","fonte":"https://commons.wikimedia.org/wiki/File:Windshield-spiderweb.jpg"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/policia-seguranca/onibus-de-turismo-e-arrombado-na-faixa-nova-de-camobi-e-suspeitos-levam-r-220-mil.30899191"}]
 ---
 
