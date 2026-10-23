@@ -114,5 +114,7 @@ export async function postarNoInstagram(urlImagem: string, legenda: string): Pro
 export async function postarStoriesInstagram(urlImagem: string): Promise<string> {
   await esperarUrlNoAr(urlImagem);
   const container = await chamar(`${await contaId()}/media`, { media_type: "STORIES", image_url: urlImagem });
+  // Sem esperar o processamento, o publish falha com "Media ID is not available".
+  await esperarProcessamento(container, 2);
   return chamar(`${await contaId()}/media_publish`, { creation_id: container });
 }
