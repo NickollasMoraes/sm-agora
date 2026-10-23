@@ -5,7 +5,8 @@ categoria: seguranca
 tags: ["acidente-de-transito","ers-357","cacapava-do-sul","lavras-do-sul","rodovias"]
 data: 2026-10-18T11:22:25.553Z
 imagem: "/imagens/noticias/colisao-frontal-mata-tres-pessoas-ers-357-cacapava-do-sul.jpg"
-imagemAlt: "SM Agora"
+imagemAlt: "Rodovia de pista simples à noite, com faixas sinalizadas e acostamento, em área rural"
+credito: {"autor":"jameswheeler / Pixabay","licenca":"Licença Pixabay","fonte":"https://pixabay.com/pt/photos/limpar-nuvens-nebuloso-frio-3826677/"}
 fontes: [{"nome":"Diário de Santa Maria","url":"https://diariosm.com.br/noticias/policia-seguranca/tres-pessoas-morrem-em-acidente-entre-dois-carros-na-ers-357-em-cacapava-do-sul.30899110"}]
 ---
 
