@@ -34,6 +34,7 @@ async function wikimedia(busca: string): Promise<ImagemEscolhida[]> {
   });
   const r = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
     headers: { "User-Agent": `${config.siteNome}Bot/1.0 (${config.siteUrl})` },
+    signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) return [];
   const dados = (await r.json()) as {
@@ -93,6 +94,7 @@ async function openverse(busca: string): Promise<ImagemEscolhida[]> {
   });
   const r = await fetch(`https://api.openverse.org/v1/images/?${params}`, {
     headers: { "User-Agent": `${config.siteNome}Bot/1.0 (${config.siteUrl})` },
+    signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) return [];
   const dados = (await r.json()) as {
@@ -124,7 +126,7 @@ async function pixabay(busca: string): Promise<ImagemEscolhida[]> {
     safesearch: "true",
     per_page: "10",
   });
-  const r = await fetch(`https://pixabay.com/api/?${params}`);
+  const r = await fetch(`https://pixabay.com/api/?${params}`, { signal: AbortSignal.timeout(30000) });
   if (!r.ok) return [];
   const dados = (await r.json()) as { hits: Array<{ pageURL: string; user: string; largeImageURL: string; tags: string }> };
   return dados.hits.filter((p) => textoCombina(p.tags, busca)).map((p) => ({
@@ -141,7 +143,7 @@ async function pexels(busca: string): Promise<ImagemEscolhida[]> {
   if (!config.pexelsKey) return [];
   const r = await fetch(
     `https://api.pexels.com/v1/search?${new URLSearchParams({ query: busca, per_page: "10", orientation: "landscape" })}`,
-    { headers: { Authorization: config.pexelsKey } },
+    { headers: { Authorization: config.pexelsKey }, signal: AbortSignal.timeout(30000) },
   );
   if (!r.ok) return [];
   const dados = (await r.json()) as { photos: Array<{ url: string; alt?: string; photographer: string; src: { large2x: string } }> };
@@ -178,9 +180,9 @@ export async function buscarCandidatas(buscas: string[]): Promise<ImagemEscolhid
 }
 
 export async function baixarImagem(url: string): Promise<Buffer> {
-  let r = await fetch(url, { headers: { "User-Agent": `${config.siteNome}Bot/1.0 (${config.siteUrl})` } });
+  let r = await fetch(url, { headers: { "User-Agent": `${config.siteNome}Bot/1.0 (${config.siteUrl})` }, signal: AbortSignal.timeout(30000) });
   // O Wikimedia exige identificação, mas o Flickr (fotos do Openverse) recusa esse "Bot": tenta sem ele.
-  if (r.status === 403) r = await fetch(url);
+  if (r.status === 403) r = await fetch(url, { signal: AbortSignal.timeout(30000) });
   if (!r.ok) throw new Error(`Não consegui baixar a imagem (HTTP ${r.status})`);
   return Buffer.from(await r.arrayBuffer());
 }
