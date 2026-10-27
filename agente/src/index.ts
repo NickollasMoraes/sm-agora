@@ -46,6 +46,38 @@ process.on("exit", () => {
 
 const bot = new Bot(config.telegramToken);
 
+// O Telegram limita mensagens no mesmo chat. A fila evita que aprovações
+// simultâneas de matérias derrubem a prévia com erro 429.
+let telegramFila = Promise.resolve();
+bot.api.config.use(async (prev, method, payload, signal) => {
+  if (method === "getUpdates") return prev(method, payload, signal);
+
+  const anterior = telegramFila;
+  let liberar!: () => void;
+  telegramFila = new Promise<void>((resolve) => {
+    liberar = resolve;
+  });
+  await anterior;
+
+  try {
+    for (;;) {
+      try {
+        return await prev(method, payload, signal);
+      } catch (erro) {
+        const resposta = erro as {
+          error_code?: number;
+          parameters?: { retry_after?: number };
+        };
+        if (resposta.error_code !== 429) throw erro;
+        const segundos = resposta.parameters?.retry_after ?? 1;
+        await new Promise((resolve) => setTimeout(resolve, segundos * 1000));
+      }
+    }
+  } finally {
+    setTimeout(liberar, 1100);
+  }
+});
+
 // Segurança: só responde ao seu chat. No primeiro uso, /start mostra o número a colocar no .env.
 bot.use(async (ctx, next) => {
   const chat = String(ctx.chat?.id ?? "");
