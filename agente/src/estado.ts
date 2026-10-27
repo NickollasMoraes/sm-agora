@@ -68,7 +68,7 @@ const banco = carregar();
 export function salvar() {
   const limite = Date.now() - DIAS_GUARDAR * 86400_000;
   for (const [id, r] of Object.entries(banco.itens)) {
-    if (new Date(r.atualizadoEm).getTime() < limite && !r.rascunho) delete banco.itens[id];
+    if (new Date(r.atualizadoEm).getTime() < limite && (!r.rascunho || r.status === "publicado")) delete banco.itens[id];
   }
   fs.mkdirSync(config.pastas.dados, { recursive: true });
   const tmp = `${ARQUIVO}.tmp`;
@@ -121,6 +121,17 @@ export function registrarHistorico(itemId: string, evento: string, detalhe?: str
     ...(detalhe ? { detalhe } : {}),
   };
   fs.mkdirSync(config.pastas.dados, { recursive: true });
+  // Rotação mensal: ao virar o mês, o arquivo antigo vira historico-AAAA-MM.jsonl e começa um novo.
+  try {
+    const mtime = fs.statSync(ARQUIVO_HISTORICO).mtime;
+    const hoje = new Date();
+    if (mtime.getFullYear() !== hoje.getFullYear() || mtime.getMonth() !== hoje.getMonth()) {
+      const mes = `${mtime.getFullYear()}-${String(mtime.getMonth() + 1).padStart(2, "0")}`;
+      fs.renameSync(ARQUIVO_HISTORICO, path.join(config.pastas.dados, `historico-${mes}.jsonl`));
+    }
+  } catch {
+    // arquivo ainda não existe (ou não deu para rotacionar): segue gravando no atual
+  }
   fs.appendFileSync(ARQUIVO_HISTORICO, `${JSON.stringify(linha)}\n`);
 }
 

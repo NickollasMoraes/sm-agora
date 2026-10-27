@@ -6,3 +6,7 @@ agente/data/
 *.log
 .claude/
 arte-exemplo-instagram.jpg
+
+agente/.env*
+!agente/.env.example
+__img_b64.txt

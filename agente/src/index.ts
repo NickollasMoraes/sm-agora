@@ -60,7 +60,7 @@ bot.api.config.use(async (prev, method, payload, signal) => {
   await anterior;
 
   try {
-    for (;;) {
+    for (let tentativa = 1; ; tentativa++) {
       try {
         return await prev(method, payload, signal);
       } catch (erro) {
@@ -68,7 +68,7 @@ bot.api.config.use(async (prev, method, payload, signal) => {
           error_code?: number;
           parameters?: { retry_after?: number };
         };
-        if (resposta.error_code !== 429) throw erro;
+        if (resposta.error_code !== 429 || tentativa >= 5) throw erro;
         const segundos = resposta.parameters?.retry_after ?? 1;
         await new Promise((resolve) => setTimeout(resolve, segundos * 1000));
       }

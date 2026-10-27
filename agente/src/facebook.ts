@@ -14,6 +14,7 @@ async function chamar(caminho: string, dados: Record<string, string>): Promise<R
   const resposta = await fetch(`${API}/${caminho}`, {
     method: "POST",
     body: new URLSearchParams({ ...dados, access_token: config.facebookPageToken }),
+    signal: AbortSignal.timeout(30000),
   });
   const json = (await resposta.json()) as { id?: string; post_id?: string; error?: { message?: string } };
   if (!resposta.ok || (!json.id && !json.post_id)) throw new Error(`Facebook: ${json.error?.message ?? resposta.status}`);
@@ -31,6 +32,7 @@ export async function postarFacebookReels(urlVideo: string, legenda: string): Pr
   const upload = await fetch(`https://rupload.facebook.com/video-upload/v21.0/${inicio.id}`, {
     method: "POST",
     headers: { Authorization: `OAuth ${config.facebookPageToken}`, file_url: urlVideo },
+    signal: AbortSignal.timeout(30000),
   });
   const enviado = (await upload.json()) as { success?: boolean; error?: { message?: string } };
   if (!upload.ok || !enviado.success) throw new Error(`Facebook Reels: ${enviado.error?.message ?? upload.status}`);

@@ -80,7 +80,7 @@ export async function receberVideo(
 
   await bot.api.sendMessage(chat, "🎬 Recebi o vídeo. Montando a capa…");
   const info = await bot.api.getFile(arquivo.file_id);
-  const resp = await fetch(`https://api.telegram.org/file/bot${config.telegramToken}/${info.file_path}`);
+  const resp = await fetch(`https://api.telegram.org/file/bot${config.telegramToken}/${info.file_path}`, { signal: AbortSignal.timeout(30000) });
   if (!resp.ok) throw new Error(`Não consegui baixar o vídeo do Telegram (HTTP ${resp.status})`);
   fs.mkdirSync(pasta, { recursive: true });
   await bot.api.sendMessage(chat, "🏷 Colocando a marca d'água…");
@@ -197,6 +197,6 @@ export async function publicarReelsPeloSite(
     return await postarReels(`${base}.mp4`, `${base}.jpg`, legenda, noFeed);
   } finally {
     fs.rmSync(videoNoSite, { force: true });
-    await enviarAoGitHub(["site/public/imagens/reels"], `Remove vídeo do Reels: ${titulo}`).catch(() => {});
+    await enviarAoGitHub(["site/public/imagens/reels"], `Remove vídeo do Reels: ${titulo}`).catch((e) => console.error(`[reels] falha ao remover vídeo do site (${nome}):`, (e as Error).message));
   }
 }

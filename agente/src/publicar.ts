@@ -93,7 +93,11 @@ function limparReelsAntigos(): void {
 // Uma operação de git por vez: matéria e Reels podem ser publicados quase juntos.
 let filaGit: Promise<unknown> = Promise.resolve();
 export function enviarAoGitHub(caminhos: string[], mensagem: string): Promise<void> {
-  const git = (...args: string[]) => exec("git", args, { cwd: config.pastas.raiz });
+  const git = (...args: string[]) => exec("git", args, {
+    cwd: config.pastas.raiz,
+    timeout: 120_000,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+  });
   const vez = filaGit.then(async () => {
     await git("add", ...caminhos);
     await git("commit", "-m", mensagem);

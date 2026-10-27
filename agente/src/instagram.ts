@@ -11,6 +11,13 @@ import { config } from "./config.js";
 
 const API = config.igToken.startsWith("IG") ? "https://graph.instagram.com/v21.0" : "https://graph.facebook.com/v21.0";
 
+// Token no header Authorization (não aparece em URL de erro/log) e timeout de 30 s em toda chamada da Graph API.
+const opcoes = (extra: RequestInit = {}): RequestInit => ({
+  ...extra,
+  headers: { Authorization: `Bearer ${config.igToken}` },
+  signal: AbortSignal.timeout(30000),
+});
+
 export const instagramConfigurado = () => Boolean(config.igToken);
 
 // Tokens do Login do Instagram valem 60 dias. Renovamos toda semana e gravamos no .env,
@@ -19,6 +26,7 @@ export async function renovarToken(): Promise<void> {
   if (!config.igToken.startsWith("IG")) return;
   const r = await fetch(
     `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${config.igToken}`,
+    { signal: AbortSignal.timeout(30000) },
   );
   const dados = (await r.json()) as { access_token?: string; expires_in?: number; error?: { message: string } };
   if (!dados.access_token) throw new Error(`Instagram: não consegui renovar o token (${dados.error?.message ?? r.status})`);
@@ -33,7 +41,7 @@ let idConta = config.igUserId;
 async function contaId(): Promise<string> {
   if (idConta) return idConta;
   // Sem INSTAGRAM_USER_ID: descobre pela própria conta do token (Login do Instagram)
-  const r = await fetch(`${API}/me?fields=user_id,username&access_token=${config.igToken}`);
+  const r = await fetch(`${API}/me?fields=user_id,username`, opcoes());
   const dados = (await r.json()) as { user_id?: string; id?: string; error?: { message: string } };
   idConta = dados.user_id ?? dados.id ?? "";
   if (!idConta) throw new Error(`Instagram: não consegui identificar a conta (${dados.error?.message ?? r.status})`);
@@ -45,7 +53,7 @@ const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function esperarUrlNoAr(url: string, minutos = 10): Promise<void> {
   const fim = Date.now() + minutos * 60_000;
   while (Date.now() < fim) {
-    const r = await fetch(url, { method: "HEAD" }).catch(() => null);
+    const r = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(30000) }).catch(() => null);
     if (r?.ok) return;
     await esperar(20_000);
   }
@@ -53,10 +61,10 @@ export async function esperarUrlNoAr(url: string, minutos = 10): Promise<void> {
 }
 
 async function chamar(caminho: string, params: Record<string, string>) {
-  const r = await fetch(`${API}/${caminho}`, {
+  const r = await fetch(`${API}/${caminho}`, opcoes({
     method: "POST",
-    body: new URLSearchParams({ ...params, access_token: config.igToken }),
-  });
+    body: new URLSearchParams(params),
+  }));
   const dados = (await r.json()) as { id?: string; error?: { message: string } };
   if (!r.ok || !dados.id) throw new Error(`Instagram: ${dados.error?.message ?? r.status}`);
   return dados.id;
@@ -66,7 +74,7 @@ async function chamar(caminho: string, params: Record<string, string>) {
 async function esperarProcessamento(container: string, minutos: number): Promise<void> {
   const fim = Date.now() + minutos * 60_000;
   while (Date.now() < fim) {
-    const r = await fetch(`${API}/${container}?fields=status_code,status&access_token=${config.igToken}`);
+    const r = await fetch(`${API}/${container}?fields=status_code,status`, opcoes());
     const { status_code, status } = (await r.json()) as { status_code?: string; status?: string };
     if (status_code === "FINISHED") return;
     if (status_code === "ERROR") throw new Error(`Instagram recusou a mídia${status ? ` (${status})` : ""}.`);
@@ -90,7 +98,7 @@ export async function postarReels(urlVideo: string, urlCapa: string, legenda: st
   });
   await esperarProcessamento(container, 15);
   const id = await chamar(`${await contaId()}/media_publish`, { creation_id: container });
-  const link = await fetch(`${API}/${id}?fields=permalink&access_token=${config.igToken}`)
+  const link = await fetch(`${API}/${id}?fields=permalink`, opcoes())
     .then((x) => x.json() as Promise<{ permalink?: string }>)
     .catch(() => ({ permalink: undefined }));
   return link.permalink ?? `https://instagram.com/${config.instagramArroba}`;
@@ -101,13 +109,18 @@ export async function postarNoInstagram(urlImagem: string, legenda: string): Pro
   const container = await chamar(`${await contaId()}/media`, { image_url: urlImagem, caption: legenda });
 
   // Aguarda o Instagram processar a imagem
+  let pronto = false;
   for (let i = 0; i < 12; i++) {
-    const r = await fetch(`${API}/${container}?fields=status_code&access_token=${config.igToken}`);
+    const r = await fetch(`${API}/${container}?fields=status_code`, opcoes());
     const { status_code } = (await r.json()) as { status_code?: string };
-    if (status_code === "FINISHED") break;
+    if (status_code === "FINISHED") {
+      pronto = true;
+      break;
+    }
     if (status_code === "ERROR") throw new Error("Instagram recusou a imagem.");
     await esperar(5000);
   }
+  if (!pronto) throw new Error("O Instagram não terminou de processar a imagem em 1 min.");
   return chamar(`${await contaId()}/media_publish`, { creation_id: container });
 }
 

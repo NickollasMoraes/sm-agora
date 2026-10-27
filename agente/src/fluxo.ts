@@ -30,7 +30,7 @@ function iniciarPreparacaoMidias(id: string): void {
   const versao = (versoesMidias.get(id) ?? 0) + 1;
   versoesMidias.set(id, versao);
   for (const tipo of ["story", "reel", "capa"] as const) fs.rmSync(arquivoMidia(id, tipo), { force: true });
-  const tarefa = prepararMidias(id, versao).catch(() => {});
+  const tarefa = prepararMidias(id, versao).catch((e) => console.error(`[midias] falha ao preparar mídias de ${id}:`, e));
   tarefasMidias.set(id, tarefa);
 }
 
@@ -231,7 +231,8 @@ export async function montarPrevia(bot: Bot, id: string): Promise<void> {
   if (imagem) {
     try {
       fotoReal = await fotoDoSite(await baixarImagem(imagem.url));
-    } catch {
+    } catch (e) {
+      console.error(`[foto] falha ao baixar/preparar a foto real (${imagem.url}):`, (e as Error).message);
       fotoReal = null;
     }
   }
@@ -324,7 +325,7 @@ export async function publicarItem(bot: Bot, id: string): Promise<void> {
   const resultados: string[] = [canais.site ? (pub.enviadoAoGitHub ? "site: ok" : `site: erro: ${pub.aviso}`) : "site: pulado: desligado"];
   db.atualizar(id, { status: "publicado", publicacao: pub, canais: { ...(r.canais ?? {}), site: { status: pub.enviadoAoGitHub ? "ok" : "erro", detalhe: pub.aviso, em: new Date().toISOString() } } });
   db.registrarHistorico(id, "publicada", pub.url);
-  if (pub.enviadoAoGitHub) await esperarUrlNoAr(pub.url).catch(() => {});
+  if (pub.enviadoAoGitHub) await esperarUrlNoAr(pub.url).catch((e) => console.error(`[site] URL ${pub.url} não confirmada no ar:`, (e as Error).message));
   const legendaBase = r.rascunho!.legendaInstagram;
   const comBio = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
   // Trânsito: pede vídeos e fotos dos seguidores (base para repostar flagras quando o perfil crescer).
@@ -419,7 +420,7 @@ async function publicarItemAntigo(bot: Bot, id: string): Promise<void> {
         await postarFacebookReels(`${config.siteUrl}/imagens/reels/${pub.slug}.mp4`, legenda);
         resultados.push("facebookReels: ok");
         fs.rmSync(path.join(config.pastas.capasReels, `${pub.slug}.mp4`), { force: true });
-        await enviarAoGitHub(["site/public/imagens/reels"], `Remove Reels Facebook: ${r.rascunho!.titulo}`).catch(() => {});
+        await enviarAoGitHub(["site/public/imagens/reels"], `Remove Reels Facebook: ${r.rascunho!.titulo}`).catch((e) => console.error(`[facebookReels] falha ao remover mp4 do site (${pub.slug}):`, (e as Error).message));
       }
       if (configCanais.instagramReels && instagramConfigurado()) {
         const link = await publicarReelsPeloSite(pub.slug, video, camadas.capa, legenda, r.rascunho!.tituloArte, false);
@@ -528,7 +529,8 @@ export async function postarNosCanais(
   const storyUrl = `${config.siteUrl}/imagens/instagram/${pub.slug}-story.jpg`;
   const reelUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.mp4`;
   const capaUrl = `${config.siteUrl}/imagens/reels/${pub.slug}.jpg`;
-  const deve = (canal: NomeCanal) => !filtro || filtro.includes(canal);
+  // Canal que já postou com sucesso não é repostado (evita duplicar ao repostar com canais escolhidos).
+  const deve = (canal: NomeCanal) => (!filtro || filtro.includes(canal)) && item.canais?.[canal]?.status !== "ok";
   const legendaBase = item.rascunho!.legendaInstagram;
   const legenda = /bio/i.test(legendaBase) ? legendaBase : `${legendaBase}\n\n🔗 Matéria completa no link da bio`;
   const resultados: Partial<Record<NomeCanal, db.ResultadoCanal>> = {};
